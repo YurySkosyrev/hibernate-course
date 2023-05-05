@@ -42,3 +42,60 @@ username VARCHAR(128) PRIMARY KEY - не автогенерируемый primar
 
 Gradle устанавливать не нужно, т.к. у нас есть gradle-wrapper, который устанавливается автоматически Idea из коробки.
 
+## Конфигурация SessionFactory
+
+Для конфигурации SessionFactory в Hibernate используется файл hibernate.cfg.xml
+
+```java
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-configuration PUBLIC
+    "-//Hibernate/Hibernate Configuration DTD//EN"
+    "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+  <session-factory>
+    <property name="connection.url">jdbc:postgresql://localhost:5433/postgres</property>
+    <property name="connection.username">postgres</property>
+    <property name="connection.password">postgres</property>
+    <property name="connection.driver_class">org.postgresql.Driver</property>
+    <property name="hibernate.dialect">org.hibernate.dialect.PostgreSQLDialect</property>
+
+    <!-- DB schema will be updated if needed -->
+    <!-- <property name="hibernate.hbm2ddl.auto">update</property> -->
+  </session-factory>
+</hibernate-configuration>
+```
+
+dialect позволяет Hibernate сконфигурировать дополнительные типы, функции, view и так далее, которые специфичны для определенной БД.
+
+```java
+ public static void main(String[] args) {
+        Configuration configuration = new Configuration();
+        configuration.configure();
+
+        try (SessionFactory sessionFactory = configuration.buildSessionFactory();
+             Session session = sessionFactory.openSession()) {
+            System.out.println("OK");
+        }
+    }
+```
+
+В классе Configurate содержится всё, что нужно для создания SessionFactory - аналога ConnectionPool из JDBC.
+
+Как и у ConnectionPool должен быть один объект SessionFactory на всё приложение.
+
+Session - обертка над классом Connection.
+
+## Entity
+
+Для того, чтобы класс стал сущностью необходимо несколько правил:
+
+- POJO - Plain Old Java Object. Все поля private, getter, setter ко всем полям.
+- сущность не может быть Immutable, то есть нельзя объявлять final поля.
+- сам класс не может быть final, потому что Hibernate работает с Proxy.<BR> 
+Proxy работает по принципе CGLIB - code generation library, который создает наследников нашего класса
+- должен быть конструктор без параметров. Т.к. Hibernate использует Reflection API для создания сущностей и последующей инициализации через setter или напрямую через Reflection API устанавливает свойства для полей.
+
+
+
+
+
