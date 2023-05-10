@@ -102,11 +102,48 @@ Proxy работает по принципе CGLIB - code generation library, к
 
 В Hibernate необходимо вручную работать с транзакциями 
 ```java
+ public static void main(String[] args) {
+        Configuration configuration = new Configuration();
+        configuration.configure();
 
+        try (SessionFactory sessionFactory = configuration.buildSessionFactory();
+             Session session = sessionFactory.openSession()) {
+
+            session.beginTransaction();
+
+            User user = User.builder()
+                    .username("ivan@mail.ru")
+                    .firstname("Ivan")
+                    .lastname("Ivanov")
+                    .birthDate(LocalDate.of(2000, 1, 12))
+                    .age(20)
+                    .build();
+
+            session.save(user);
+            session.getTransaction().commit();
+        }
+    }
 ```
 
-Чтобы Hibernate отслеживал сущность необходимо
+Чтобы Hibernate отслеживал сущность необходимо необходимо добавить соответствующий класс в конфигурацию
 
+```java
+ configuration.addAnnotatedClass(User.class);
+```
 
+Либо прописать mapping класса в xml:
+```java
+  <mapping class="com.dmdev.entity.User"/>
+```
+
+@Table(name = "Users") - указываем к какой таблице относится данная сущность.
+
+Чтобы настроить маппинг названия полей класса и колонок в БД, необходимо установить
+
+```java
+configuration.setPhysicalNamingStrategy(new CamelCaseToUnderscoresNamingStrategy());
+```
+
+Либо использовать аннотацию @Column(name = "birth_day"). Здесь так же можно указать много информации: nullable, точность, можно вставлять или нет, размер. На основании этой метаинформации Hibernate поддерживает автосоздание DDL.
 
 

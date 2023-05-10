@@ -3,6 +3,7 @@ package com.dmdev;
 import com.dmdev.entity.User;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy;
 import org.hibernate.cfg.Configuration;
 
 import java.time.LocalDate;
@@ -10,6 +11,8 @@ import java.time.LocalDate;
 public class HibernateRunner {
     public static void main(String[] args) {
         Configuration configuration = new Configuration();
+//        configuration.addAnnotatedClass(User.class);
+//        configuration.setPhysicalNamingStrategy(new CamelCaseToUnderscoresNamingStrategy());
         configuration.configure();
 
         try (SessionFactory sessionFactory = configuration.buildSessionFactory();
