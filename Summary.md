@@ -146,4 +146,60 @@ configuration.setPhysicalNamingStrategy(new CamelCaseToUnderscoresNamingStrategy
 
 Либо использовать аннотацию @Column(name = "birth_day"). Здесь так же можно указать много информации: nullable, точность, можно вставлять или нет, размер. На основании этой метаинформации Hibernate поддерживает автосоздание DDL.
 
+## Класс Session
+
+Интерфейс Session по сути обертка над классом Connection, которая работает с сущностями и отслеживает их жизненный цикл.
+
+При вызове метода save() с помощью ReflectionAPI формируется SQL-запрос.
+
+```java
+  @Test
+    void checkReflectionApi() throws SQLException, IllegalAccessException {
+        User user = User.builder()
+                .username("ivan@mail.ru")
+                .firstname("Ivan")
+                .lastname("Ivanov")
+                .birthDate(LocalDate.of(2000, 1, 12))
+                .age(20)
+                .build();
+
+        String sql = """
+                insert
+                into
+                %s
+                (%s)
+                values
+                (%s)
+                """;
+
+        String tableName = Optional.ofNullable(user.getClass().getAnnotation(Table.class))
+                .map(tableAnnotation -> tableAnnotation.schema() + "." + tableAnnotation.name())
+                .orElse(user.getClass().getName());
+
+        Field[] declaredFields = user.getClass().getDeclaredFields();
+        String columnName = Arrays.stream(declaredFields)
+                .map(field -> Optional.ofNullable(field.getAnnotation(Column.class))
+                        .map(Column::name)
+                        .orElse(field.getName()))
+                .collect(Collectors.joining(", "));
+
+        String columnValues = Arrays.stream(declaredFields)
+                .map(fields -> "?")
+                .collect(Collectors.joining(", "));
+
+        String setSql = sql.formatted(tableName, columnName, columnValues);
+        System.out.println(setSql);
+
+        Connection connection = null;
+        PreparedStatement preparedStatement = connection.prepareStatement(setSql);
+        for (Field declaredField : declaredFields) {
+            declaredField.setAccessible(true);
+            preparedStatement.setObject(1, declaredField.get(user));
+        }
+    }
+```
+
+В Hibernate это всё происходит автоматически под капотом, достаточно лишь правильно описать сущность в соответствующем классе.
+
+
 
