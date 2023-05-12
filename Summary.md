@@ -201,5 +201,68 @@ configuration.setPhysicalNamingStrategy(new CamelCaseToUnderscoresNamingStrategy
 
 В Hibernate это всё происходит автоматически под капотом, достаточно лишь правильно описать сущность в соответствующем классе.
 
+## Type Converter
+
+В классе Configuration есть поле 
+'''java
+private final List<BasicType<?>> basicTypes = new ArrayList<>();
+'''
+
+Это список всех типов, которые может поддерживать Hibernate и преобразовывать один в другой.
+Есть методы wrap() и unwrap(), которые преобразуют типы Java в типы SQL и наоборот.
+А так же Descriptorы, которые устанавливают значения в JDBC запрос.
+
+Enum можно хранить в БД в виде String (EnumType.STRING) или int (EnumType.ORDINAL). int плохой способ хранения Enum, так как при изменении
+порядка значений смысловая сущность записанных данных в БД будет утеряна.
+
+Все Enum наследуются от класса Enum из пакета java.lang, поэтому нельзя наследовать другие классы, а только реализовывать интерфейсы.
+
+```java
+    @Enumerated(EnumType.STRING) // по умолчанию EnumType.ORDINAL, т.е. Enum преобразуется в int
+    private Role role;
+```
+
+По сути преобразование Java классов в SQL типы происходит с помощью соответствующих реализаций interface Type.
+
+## Custom attribute converter
+
+Если нужно преобразовать свой класс в типы SQL можно реализовать свой Converter
+
+В новых классах работы с датами нет методов перехода к старым, а в старых есть, чтобы когда-нибудь отказаться от старых типов.
+
+```java
+public class BirthDayConverter implements AttributeConverter<Birthday, Date> {
+    @Override
+    public Date convertToDatabaseColumn(Birthday attribute) {
+        return Optional.ofNullable(attribute)
+                .map(Birthday::birthDate)
+                .map(Date::valueOf)
+                .orElse(null);
+    }
+
+    @Override
+    public Birthday convertToEntityAttribute(Date dbData) {
+        return Optional.ofNullable(dbData)
+                .map(Date::toLocalDate)
+                .map(Birthday::new)
+                .orElse(null);
+    }
+}
 
 
+@Convert(converter = BirthDayConverter.class)
+@Column(name = "birth_date")
+private Birthday birthDate;
+```
+Чтобы не прописывать @Convert(converter = BirthDayConverter.class) в сущность, можно настроить конфигурацию Hibernate.
+
+```java
+ configuration.addAttributeConverter(new BirthDayConverter(), true);
+```
+
+Либо над конвертером
+```java
+@Converter(autoApply = true)
+public class BirthDayConverter implements AttributeConverter<Birthday, Date> { ...
+}
+```

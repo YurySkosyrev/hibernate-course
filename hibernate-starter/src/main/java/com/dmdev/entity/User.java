@@ -1,9 +1,7 @@
 package com.dmdev.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.dmdev.converter.BirthDayConverter;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,8 +21,12 @@ public class User {
     private String username;
     private String firstname;
     private String lastname;
+
+//    @Convert(converter = BirthDayConverter.class)
     @Column(name = "birth_date")
-    private LocalDate birthDate;
-    private Integer age;
+    private Birthday birthDate;
+
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
 }
