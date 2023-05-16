@@ -266,3 +266,44 @@ private Birthday birthDate;
 public class BirthDayConverter implements AttributeConverter<Birthday, Date> { ...
 }
 ```
+
+## Custom user type
+
+Предположим в БД есть колонка типа JSONB, которой нет аналога в Java-SQL. Тогда нам нужно создать свой собственный тип реализуя 
+интерфейс Type, либо UserType.
+
+Главные методы в них это nullSafeGet и nullSafeSet, которые работают с ResultSet и устанвливают значения в PrepareStatement.
+
+Чтобы не переопределять все методы вручную можно воспользоваться библиотекой Hibernate Types
+
+```java
+public class User {
+        ...
+    //    @Type(type = "com.vladmihalcea.hibernate.type.json.JsonBinaryType")
+        @Type(type = "jsonb")
+        private String info;
+}
+```
+
+Так же нужно зарегистрировать тип в configuration
+```java
+ configuration.registerTypeOverride(new JsonBinaryType());
+```
+
+при этом объект просто добавляется в коллекцию basicTypes.
+
+Можно указать короткое имя над классом (пакетом) 
+
+```java
+@TypeDef(name = "dmdev", typeClass = JsonBinaryType.class)
+public class User {
+    ...
+
+    @Type(type = "dmdev")
+    private String info;
+}
+```
+
+
+
+
