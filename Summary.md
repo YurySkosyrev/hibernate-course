@@ -353,6 +353,52 @@ EntityPersister мапит SQL запросы с нашей сущностью.
 
 В Hibernate широко используется модель event - listner, то есть каждый listner вызывается при возникновении определенного event.
 
+## First Level Cashe
+
+Класс сущности является ключем по которому мы получаем соответствующий EntityPersister. 
+
+В Hibernate реализованы механизмы кэширования, чтобы меньше раз обращаться к БД. Это First Level Cashe, он есть всегда по умолчанию и никак его не отключить. 
+
+В объекте Session есть поле persistenceContext - кэш. В объекте класса PersistenceContext есть ссылка на сессию, которой он принадлежит. У каждой сессии свой PersistenceCentext. 
+
+В PersistenceContext есть ассоциативный массив entitiesByKey, ключ - объект EntityKey с полями identifier - id, hashcode, entityPersister.
+значение - объект который получен из БД.
+
+Сущности в persistenceContext помещаются после вызова методов у объекта Session - save, get и другие.
+
+Для удаления объектов из кэша есть два метода:
+
+- Session.evict(user) - удаление одного объекта
+- Session.clear() - удаление всех объектов
+- Session.close() - закрыть сессию
+
+Если после получения сущности из БД мы поменяем в ней поля, то эти изменения отразятся и на БД. То есть перед commit будет вызван 
+запрос update.
+
+```java
+    User user = session.get(User.class, "ivan@mail.ru");
+    user.setLastname("Sidorov");
+```
+
+Таким образом изменения во всех сущностях, содержащихся в persistenceContext будут автоматически Hibernate производится и в БД.
+Это называется dirty session.
+
+Session.isDirty() показывает были ли изменения в сущностях, ассоциированных с данной сессией.
+
+Flush - сливание всех изменений в БД.
+
+Session.flush() - сливает все изменения объектов persistenceContext в БД.
+
+![alt text](img/persistenceContext.jpg "jdbc-structure")
+
+В metaModel есть много объектов Session, нечто вроде SessionPool и в каждой есть свой PersistenceContext. Каждая сущность может быть ассоциирована со своим PersistenceContext и в каждом PersistenceContext будет своё состояние этой сущности.
+
+
+
+
+
+
+
 
 
 
