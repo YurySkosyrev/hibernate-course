@@ -393,9 +393,11 @@ Session.flush() - сливает все изменения объектов pers
 
 В metaModel есть много объектов Session, нечто вроде SessionPool и в каждой есть свой PersistenceContext. Каждая сущность может быть ассоциирована со своим PersistenceContext и в каждом PersistenceContext будет своё состояние этой сущности.
 
+![alt text](img/entityLifeCycle.jpg "jdbc-structure")
 
+Отличие Detached от Transient, в том что сущность была в Persistent-состоянии.
 
-
+@UtilityClass - создаёт private-конструктор и final-класс.
 
 
 
