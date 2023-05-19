@@ -509,3 +509,86 @@ catch (Exception exception) {
                 throw exception;
 }
 ```
+
+## File Appender
+
+```java
+ <appender name="file" class="org.apache.log4j.RollingFileAppender">
+        <param name="file" value="hibernate-starter.log"/>
+
+        <param name="append" value="true"/>
+        <param name="maxFileSize" value="1KB"/>
+        <param name="maxBackupIndex" value="10"/>
+
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="conversionPattern" value="[%d{HH:mm:ss, SSS} %p [%c: %L] %m%n]"/>
+        </layout>
+
+        <filter class="org.apache.log4j.varia.LevelRangeFilter">
+            <param name="LevelMin" value="ALL"/>
+        </filter>
+    </appender>
+```
+
+root логгер должен быть обязательно и один, своих логгеров может быть сколько угодно.
+
+```java
+  <logger name="com.dmdev" additivity="false">
+        <level value="info"/>
+        <appender-ref ref="console"/>
+    </logger>
+```
+additivity - должны ли повторятся сообщения в иерархии логгеров.
+
+Иерархия возможна и по папкам, которые отслеживаются.
+
+На практике много Appenderов и один - два логгера. Напримет, ConsoleAppender нужен только во время разработки, в production в нём нет нужды.
+
+Аннотация @Slf4j из пакета lombok заменяет объявление переменной логгера с названием log.
+
+## Embedded components
+
+Embedded components - встраиваемые компоненты.
+
+Может понадобиться объединить часть полей сущности в одно поле. Но мы не хотим создавать в SQL свой встраиваемый тип, тем более не все СУБД это поддерживают. Следовательно проще создать объекты на уровне Java, а в SQL оставить всё как есть.
+Либо в Legacy БД есть составные первичние, вторичные ключи, которые нужно объединить в один объект, чтобы работать с одним ключем.
+
+Для встраиваемых классов все те же правила, что и для сущностей. Так же нужно добавить аннотацию @Embeddable
+
+```java
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Embeddable
+public class PersonalInfo {
+    private String firstname;
+    private String lastname;
+
+    @Column(name = "birth_date")
+    private Birthday birthDate;
+}
+```
+
+Все аннотации, которые используются в сущностях можно использовать и в встраиваемых компонентах.
+
+В классе Configuration за встраиваемые компоненты отвечает класс EmbeddedComponentType extends ComponentType. Для каждого Embedded component создаётся объект класса ComponentType.
+
+Происходит двухфазовая инициализация:
+- метод hydrate - получаем все необходимые значения по колонкам из ResultSet
+- метод resolve - получаем массив всех значений соответствующих колонок и на основании массива создаём соответствующие сущности.
+
+При сохранении наоборот вызывается метод nullSafeSet
+
+Может возникнуть ситуация, что название полей в Embedded components не соответствует названиям колонок в БД. Тогда нужно использовать повторяющуюся аннотацию @AttributeOverride. Повторяющаяся - значит можно использовать несколько аннотаций над одним полем.
+
+```java
+public class User {
+
+    @Embedded
+        @AttributeOverride(name = "birthDate", column =  @Column(name = "birth_date"))
+        private PersonalInfo personalInfo;
+        
+}
+```
+

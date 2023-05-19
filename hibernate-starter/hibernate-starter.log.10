@@ -1,0 +1,9 @@
+[19:41:21, 523 TRACE [org.hibernate.internal.SessionImpl: 396] Closing session [25c0aaad-f998-4c2f-ba37-8d9bb7b2cd44]
+][19:41:21, 523 TRACE [org.hibernate.engine.jdbc.internal.JdbcCoordinatorImpl: 166] Closing JDBC container [org.hibernate.engine.jdbc.internal.JdbcCoordinatorImpl@58af5076]
+][19:41:21, 523 TRACE [org.hibernate.resource.jdbc.internal.ResourceRegistryStandardImpl: 323] Releasing JDBC resources
+][19:41:21, 523 TRACE [org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl: 259] Closing logical connection
+][19:41:21, 523 TRACE [org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl: 266] Logical connection closed
+][19:41:21, 524 DEBUG [org.hibernate.internal.SessionFactoryImpl: 808] HHH000031: Closing
+][19:41:21, 524 TRACE [org.hibernate.engine.query.spi.QueryPlanCache: 270] Cleaning QueryPlan Cache
+][19:41:21, 524 TRACE [org.hibernate.type.spi.TypeConfiguration$Scope: 208] Handling #sessionFactoryClosed from [org.hibernate.internal.SessionFactoryImpl@3c782d8e] for TypeConfiguration
+]

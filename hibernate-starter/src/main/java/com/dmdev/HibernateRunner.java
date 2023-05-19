@@ -2,6 +2,7 @@ package com.dmdev;
 
 import com.dmdev.converter.BirthDayConverter;
 import com.dmdev.entity.Birthday;
+import com.dmdev.entity.PersonalInfo;
 import com.dmdev.entity.Role;
 import com.dmdev.entity.User;
 import com.dmdev.type.JsonType;
@@ -24,9 +25,11 @@ public class HibernateRunner {
     public static void main(String[] args) {
 
         User user = User.builder()
-                .username("ivan@gmail.com")
-                .firstname("Ivan")
-                .lastname("Ivanov")
+                .username("petr1@gmail.com")
+                .personalInfo(PersonalInfo.builder()
+                        .firstname("Petr")
+                        .lastname("Petrov")
+                        .build())
                 .build();
 
         log.info("User entity is in transient state, object: {}", user);
