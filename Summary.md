@@ -428,4 +428,84 @@ Hibernate (ORM framework) - это одна из самых распростра
 - save - persist
 - delete - remove
 
+## Logging
 
+![alt text](img/log.jpg "jdbc-structure")
+
+Логгирование - сообщения, которые может анализировать программист
+
+Метрики 
+- как часто код обращается в БД 
+- RPS (Request per second) 
+- Latency - как долго ждёт пользователь после запроса в БД
+
+В реальных приложениях логи часто отправляются на специальный сервер который знает как их обрабатывать
+
+EKL - ElasticSearch, Logstash, Kibana - логи
+
+Prometheus, Grafana - метрики
+
+![alt text](img/logFrameworks.jpg "jdbc-structure")
+
+Для некоторых логгеров нужен адаптер (binding)
+
+![alt text](img/logLevel.jpg "jdbc-structure")
+
+Каждый логгер настраивается специальным текстовым или log4j.xml файлом.
+
+```java
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+
+<log4j:configuration>
+    <appender name="console" class="org.apache.log4j.ConsoleAppender">
+        <param name="target" value="System.out"/>
+        
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="conversionPattern" value="[%d{HH:mm:ss, SSS} %p [%c: %L] %m%n]"/>
+        </layout>
+    </appender>
+    
+    <root>
+        <level value="info"/>
+        <appender-ref ref="console"/>
+    </root>
+</log4j:configuration>
+```
+
+Appender берет log-сообщение и отправляет его туда, куда мы укажем.
+
+Формат задаётся паттерном layout.
+
+Класс log4j.ConsoleAppender реализует интерфейс Appender.
+Главная задача любого логгера переопределить метод 
+```java
+void doAppend (LoggingEvent event)
+``` 
+
+LoggingEvent - основной объект log-сообщения, в нем содержатся само сообщение, поток, уровень логгирования и т.д.
+
+root - сам логгер. Указываем log-level и ссылку на appender.
+
+```java
+    private static final Logger log = LoggerFactory.getLogger(HibernateRunner.class);
+```
+Обычно создаётся один логгер для класса.
+
+В лог сообщениях не следует использовать конкатенацию строк, нужно использовать varargs. 
+
+```java
+log.info("User entity is in transient state, object: {}", user);
+```
+
+{} - в них подставляются по порядку значения varargs.
+
+ При вызове логгера проверяется его уровень логгирования и уровень root-логгера, часть сообщений просто не будут выводится, если их уровень логгирования ниже чем установленный. Получается повышение производительности, т.к. в реальных приложениях огромное колличество логгеров.
+
+log может принимать объект throwable и пробрасывать его дальше
+```java
+catch (Exception exception) {
+                log.error("Exception occurred", exception);
+                throw exception;
+}
+```
