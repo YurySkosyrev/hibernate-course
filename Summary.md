@@ -399,10 +399,33 @@ Session.flush() - сливает все изменения объектов pers
 
 @UtilityClass - создаёт private-конструктор и final-класс.
 
+Session.refresh(user) - происходит запрос в БД и все полученные данные накладываются на user.
 
+```java
+User freshUser = session.get(User.class, user.getUsername());
+user.setUsername(freshUser.getUsername);
+```
 
+Session.merge(user) - получает пользователя из БД и записывает в него значения из user. Т.е. текущий объект главнее полученного из БД. При этом объект помещается в состояние Persistence.
 
+```java
+User mergeUser = session.get(User.class, user.getUsername());
+mergeUser.setUsername(user.getUsername);
+```
 
+PostgreSQL по умолчанию имеет уровень изолированности транзакций READ_COMMITED. Поэтому мы не увидим изменений из нашего кода, пока не сделаем commit транзакции.
 
+## Java Persistence API
+
+Java Persistence API (JPA) - спецификация Java, которая предоставляет набор интерфейсов/аннотаций для возможности сохранять в удобном виде Java объекты в базу данных и, наоборот,  извлекать информацию из баз данных в виде Java объектов (ORM).
+
+Hibernate (ORM framework) - это одна из самых распространенных JPA реализаций.
+
+Класс Session наследует EntityMenager и добавляет свои методы, схожие с методами EntityMenager.
+
+- get - find
+- evict - detach
+- save - persist
+- delete - remove
 
 
