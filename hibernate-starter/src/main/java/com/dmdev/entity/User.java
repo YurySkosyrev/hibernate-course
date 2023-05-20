@@ -20,8 +20,8 @@ import javax.persistence.*;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @SequenceGenerator(name = "user_gen", sequenceName =  )
+    @GeneratedValue(generator = "user_gen", strategy = GenerationType.SEQUENCE)
+    @SequenceGenerator(name = "user_gen", sequenceName =  "users_id_seq", allocationSize = 1)
     private Long id;
 
     @Column(unique = true)

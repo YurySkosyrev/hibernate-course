@@ -2,7 +2,7 @@ DROP TABLE users;
 
 CREATE TABLE users
 (
-    id BIGSERIAL PRIMARY KEY ,
+    id BIGINT PRIMARY KEY ,
     username VARCHAR(128) UNIQUE ,
     firstname VARCHAR(128),
     lastname VARCHAR(128),
@@ -12,4 +12,4 @@ CREATE TABLE users
 );
 
 create sequence users_id_seq
-owned by user.id;
+owned by users.id;
