@@ -1,6 +1,7 @@
 HELP.md
 .gradle
 .mvn
+.log
 mvnw
 mvnw.cmd
 build/

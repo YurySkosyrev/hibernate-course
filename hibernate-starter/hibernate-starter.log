@@ -1,2 +1,0 @@
-[22:01:41, 849 INFO [org.hibernate.orm.connections.pooling: 502] HHH10001008: Cleaning up connection pool [jdbc:postgresql://localhost:5433/postgres]
-]

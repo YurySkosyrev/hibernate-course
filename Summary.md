@@ -592,3 +592,85 @@ public class User {
 }
 ```
 
+## Стратегия GenerationType.SEQUENCE
+
+Для формирования идентификатора можно использовать последовательности:
+
+```sql
+create sequence users_id_seq
+owned by users.id;
+```
+
+```java
+ @Id
+    @GeneratedValue(generator = "user_gen", strategy = GenerationType.SEQUENCE)
+    @SequenceGenerator(name = "user_gen", sequenceName =  "users_id_seq", allocationSize = 1)
+    private Long id;
+```
+
+В данном случае потребуется два запроса в БД, один для получения очередного id из последовательности, второй - запрос на вставку.
+В отличии от GenerationType.IDENTITY, где требуется один запрос.
+
+При использовании GenerationType.SEQUENCE в случае вызова метода saveOrUpdate выполняется запрос к БД на получение id, и полученный id приваивается полую у сущности. В этом случае сущность переходит из состояния Transient в Persist. Наличие id обязательное условие того, что сущность находится в состоянии Persist и может быть помещена в кэш первого уровня. 
+
+При использовании натуральных ключей запросы в БД отправляются только при вызове flush(), либо commit транзакции. Осуществляется один запрос на insert, в котором таблица сама генерирует id и он записывается в сущность.
+
+## Стратегия GenerationType.TABLE
+
+Стратегия GenerationType.TABLE используется если БД не поддерживает автоматическую генерацию id или последовательности. 
+
+```sql
+create table all_sequence
+(
+    table_name VARCHAR(32) PRIMARY KEY ,
+    pk_value BIGINT NOT NULL
+)
+```
+
+```java
+@GeneratedValue(generator = "user_gen", strategy = GenerationType.TABLE)
+@TableGenerator(name = "user_gen", table =  "all_sequence", pkColumnName = "table_name",
+            valueColumnName = "pk_value", allocationSize = 1)
+```
+
+При этом
+Формируется запрос пессимистичной блокировки строки
+Hibernate: 
+   select
+        tbl.pk_value 
+    from
+        all_sequence tbl 
+    where
+        tbl.table_name=? for update
+            of tbl
+Вставляем значения из @TableGenerator и начальное значение по умолчанию 0 (можно установить)
+Hibernate: 
+    insert 
+    into
+        all_sequence
+        (table_name, pk_value)  
+    values
+        (?,?)
+Инкрементируем начальное значение и присваиваем сущности id = 1
+Hibernate: 
+    update
+        all_sequence 
+    set
+        pk_value=?  
+    where
+        pk_value=? 
+        and table_name=?
+
+Опять же для Hibernate не нужно делать insert, чтобы сущность перешла в Persistence состояние, главное присвоить ей id. Далее dirty-сессия может быть слита методами flush() и commit(), а так же другими способами.
+
+Генерация Id с помощью таблицы менее производительна т.к. мы блокируем таблицу на запись, а это требует ресурсы.
+
+## EmbeddedId
+
+Первичные ключи могут быть составными.
+
+
+
+
+
+
