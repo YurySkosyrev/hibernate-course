@@ -592,6 +592,30 @@ public class User {
 }
 ```
 
+## Стратегия GenerationType.AUTO
+
+Использует одну из трёх стратегий по умолчанию установленную для БД, либо для определённого диалекта. В Postgres - sequence.
+
+## Стратегия GenerationType.IDENTITY
+
+Таблица сама определяет как формировать id. BIGSERIAL - тип данных Postgres, который автоматически формирует id при вставке в таблицу
+
+```sql
+create table all_sequence
+(
+    id BIGSERIAL PRIMARY KEY
+)
+```
+
+```java
+   @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+```
+
+В сущности можно добавлять метаинформацию
+@Column(unique = true)
+
 ## Стратегия GenerationType.SEQUENCE
 
 Для формирования идентификатора можно использовать последовательности:
@@ -731,3 +755,28 @@ Hibernate:
 
 Такие первичные ключи вызывают трудности на разных слоях приложения. Лучше использовать Identity, когда таблица сама формирует ключ.
 
+## Other basic annotation
+
+**@Access()**
+- AccessType.FIELD - по умолчанию. Hibernate будет использовать ReflectionAPI, для доступа к полям нашей сущности.
+- AccessType.PROPERTIES - более ранний способ доступа к полям через getter и setter, Hibernate будет использовать ReflectionAPI для доступа к геттерам и сеттерам, а не напрямую к полям. И аннотации ставятся не над полями, а над геттерами.
+
+**@Transient**
+помечается поле, которое не нужно сохранять в БД. На практике лучше не использовать, а хранить в сущности только те поля, которые мапятся на соответствующие поля в БД
+
+До ввода в Java 1.8 DateTimeAPI мы использовали класс Date, но в БД есть три типа даты: Date, Time, TimeStamp.
+
+```java
+@Temporal(TemporalType.TIMESTAMP)
+private LocalDateTime localDateTime;
+
+@Temporal(TemporalType.DATE)
+private LocalDate localDate;
+
+@Temporal(TemporalType.TIME)
+private LocalTime localTime;
+```
+
+**@ColumnTransformer** - трансформируем колонку (вкрапления в SQL) при чтении и записи. Например, вызов функции encrypt() и decrypt(). Аннотация повторяемая.
+
+**@Formula("decrypt(creditcard_num)")** - добавляем sql скрипт, работает только на чтение, не на запись.
