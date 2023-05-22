@@ -24,7 +24,10 @@ import java.util.Date;
 @TypeDef(name = "dmdev", typeClass = JsonBinaryType.class)
 public class User {
 
-    @EmbeddedId
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     @AttributeOverride(name = "birthDate", column =  @Column(name = "birth_date"))
     private PersonalInfo personalInfo;
 
@@ -36,5 +39,9 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    @ManyToOne
+    //@JoinColumn(name = "company_id") умполчанию название сущность с маленькой буквы + _id
+    private Company company;
 
 }

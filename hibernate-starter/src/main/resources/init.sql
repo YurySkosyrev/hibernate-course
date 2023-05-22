@@ -2,13 +2,19 @@ DROP TABLE users;
 
 CREATE TABLE users
 (
-    username VARCHAR(128) UNIQUE ,
+    id BIGSERIAL PRIMARY KEY ,
+    username VARCHAR(128) ,
     firstname VARCHAR(128),
     lastname VARCHAR(128),
     birth_date DATE,
     role VARCHAR(32),
     info JSONB ,
-    PRIMARY KEY (username, firstname, birth_date)
+    company_id INT REFERENCES company (id)
+);
+
+CREATE TABLE company (
+    id SERIAL PRIMARY KEY ,
+    name VARCHAR(64) NOT NULL UNIQUE
 );
 
 create sequence users_id_seq

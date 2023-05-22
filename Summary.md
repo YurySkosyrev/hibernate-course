@@ -592,6 +592,11 @@ public class User {
 }
 ```
 
+## Первичные ключи
+
+Натуральные первичные ключи редко встречаются на практике, так как по сравнению с синтетическими (автогенерируемыми) происходит потеря производительности и сложно менять бизнес-логику.
+
+
 ## Стратегия GenerationType.AUTO
 
 Использует одну из трёх стратегий по умолчанию установленную для БД, либо для определённого диалекта. В Postgres - sequence.
@@ -780,3 +785,54 @@ private LocalTime localTime;
 **@ColumnTransformer** - трансформируем колонку (вкрапления в SQL) при чтении и записи. Например, вызов функции encrypt() и decrypt(). Аннотация повторяемая.
 
 **@Formula("decrypt(creditcard_num)")** - добавляем sql скрипт, работает только на чтение, не на запись.
+
+## Маппинг ассоциаций
+
+### Many to one
+
+```sql
+CREATE TABLE users
+(
+    id BIGSERIAL PRIMARY KEY ,
+    username VARCHAR(128) ,
+    firstname VARCHAR(128),
+    lastname VARCHAR(128),
+    birth_date DATE,
+    role VARCHAR(32),
+    info JSONB ,
+    company_id INT REFERENCES company (id)
+);
+
+CREATE TABLE company (
+    id SERIAL PRIMARY KEY ,
+    name VARCHAR(64) NOT NULL UNIQUE
+);
+```
+
+Добавляем новую сущность:
+
+```java
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Entity
+public class Company {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    private String name;
+}
+```
+
+И поле в сущность User
+
+```java
+    @ManyToOne
+    //@JoinColumn(name = "company_id") умполчанию название сущность с маленькой буквы + _id
+    private Company company;
+```
+
+Для работы с ManyToOne есть специальный BasicType - ManyToOneType. Этот тип когда видит соответствующую аннотацию занимается формированием запросов в БД.
