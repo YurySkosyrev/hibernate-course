@@ -669,8 +669,65 @@ Hibernate:
 
 Первичные ключи могут быть составными.
 
+```sql
+CREATE TABLE users
+(
+    username VARCHAR(128) UNIQUE ,
+    firstname VARCHAR(128),
+    lastname VARCHAR(128),
+    birth_date DATE,
+    role VARCHAR(32),
+    info JSONB ,
+    PRIMARY KEY (username, firstname, lastname) // по умолчанию все эти поля NOT NULL
+);
+```
 
+Внесем исправление в сущность с помощью аннотации EmbeddedId.
 
+```java
+    @EmbeddedId
+    @AttributeOverride(name = "birthDate", column =  @Column(name = "birth_date"))
+    private PersonalInfo personalInfo;
+```
 
+Класс, который выступает в роли первичного ключа должен реализовывать интрефейс serializable
+При этом нужно не забывать генерировать serialVersionUID.
 
+```java
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Embeddable
+public class PersonalInfo implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 9154080960028288028L;
+
+    private String firstname;
+    private String lastname;
+
+    private Birthday birthDate;
+}
+```
+
+При вызове saveOrUpdate сначала делается select, а затем уже при flash() или commit() insert или update.
+При вызове get формируется select 
+```java
+Hibernate: 
+    select
+        user_.birth_date,
+        user_.firstname,
+        user_.lastname,
+        user_.info as info4_0_,
+        user_.role as role5_0_,
+        user_.username as username6_0_ 
+    from
+        users user_ 
+    where
+        user_.birth_date=? 
+        and user_.firstname=? 
+        and user_.lastname=?
+```
+
+Такие первичные ключи вызывают трудности на разных слоях приложения. Лучше использовать Identity, когда таблица сама формирует ключ.
 

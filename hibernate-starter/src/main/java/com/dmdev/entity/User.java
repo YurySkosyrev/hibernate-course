@@ -19,23 +19,13 @@ import javax.persistence.*;
 @TypeDef(name = "dmdev", typeClass = JsonBinaryType.class)
 public class User {
 
-    @Id
-//    @GeneratedValue(generator = "user_gen", strategy = GenerationType.SEQUENCE)
-//    @SequenceGenerator(name = "user_gen", sequenceName =  "users_id_seq", allocationSize = 1)
-    @GeneratedValue(generator = "user_gen", strategy = GenerationType.TABLE)
-    @TableGenerator(name = "user_gen", table =  "all_sequence", pkColumnName = "table_name",
-            valueColumnName = "pk_value", allocationSize = 1)
-
-    private Long id;
+    @EmbeddedId
+    @AttributeOverride(name = "birthDate", column =  @Column(name = "birth_date"))
+    private PersonalInfo personalInfo;
 
     @Column(unique = true)
     private String username;
 
-    @Embedded
-    @AttributeOverride(name = "birthDate", column =  @Column(name = "birth_date"))
-    private PersonalInfo personalInfo;
-
-//    @Type(type = "com.vladmihalcea.hibernate.type.json.JsonBinaryType")
     @Type(type = "jsonb")
     private String info;
 

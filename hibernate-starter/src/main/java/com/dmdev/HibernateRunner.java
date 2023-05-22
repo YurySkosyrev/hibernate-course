@@ -29,6 +29,7 @@ public class HibernateRunner {
                 .personalInfo(PersonalInfo.builder()
                         .firstname("Petr")
                         .lastname("Petrov")
+                        .birthDate(new Birthday(LocalDate.of(2000, 1, 1)))
                         .build())
                 .build();
 
@@ -45,7 +46,18 @@ public class HibernateRunner {
                 log.trace("User is in persistent state: {}, session {}", user, session1);
 
                 session1.getTransaction().commit();
+            }
                 log.trace("User is in detached state: {}, session is closed {}", user, session1);
+            try (Session session2 = sessionFactory.openSession()) {
+
+                PersonalInfo key = PersonalInfo.builder()
+                        .firstname("Petr")
+                        .lastname("Petrov")
+                        .birthDate(new Birthday(LocalDate.of(2000, 1, 1)))
+                        .build();
+
+                User getUser = session2.get(User.class, key);
+                System.out.println();
             } catch (Exception exception) {
                 log.error("Exception occurred", exception);
                 throw exception;
