@@ -924,6 +924,39 @@ public class Company {
 }
 ```
 
+## Cascade types with collections
+
+Для коллекций следует использовать FetchType.LAZY, так как коллекции могут быть очень большими. При FetchType.EAGER формируется запрос с left outer join и если в сущности есть несколько коллекций, то получается декартово произведение, которое тащит огромное колличество записей из БД.
+
+CascadeType.ALL При этом при добавлении компании все пользователи, которые отсутствуют в БД будут сохранены, а при удалении компании будут удалены и все userы, которые ей принадлежат.
+
+При добавлении пользователя в компанию необходимо создать отдельный метод, чтобы правильно присвоить все ссылки в рамках Java модели
+
+```java
+ public void addUser(User user) {
+        users.add(user);
+        user.setCompany(this);
+    }
+```
+
+Чтобы не было NullPointerException нужно на ходу определить Set и в случае использования @Builder задать по умолчанию определение Set.
+
+```java
+    @Builder.Default
+    @OneToMany(mappedBy = "company")
+    private Set<User> users = new HashSet<>();
+```
+
+CascadeType лучше использовать на уровне БД, а не Hibernate, это более производительно.
+
+```sql
+company_id INT REFERENCES company(id) ON DELETE CASCADE;
+```
+
+Если у Company не стоит CascadeType.ALL, то при удалении User, у которого стоит ALL возникнет исключаение, т.к. будет попытка удалить компанию, хотя на неё ссылаются существующие userы.
+
+
+
 
 
 
