@@ -1,6 +1,11 @@
 package com.dmdev;
 
+import com.dmdev.entity.Company;
 import com.dmdev.entity.User;
+import com.dmdev.util.HibernateUtil;
+import lombok.Cleanup;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.Test;
 
 import javax.persistence.Column;
@@ -17,6 +22,21 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 class HibernateRunnerTest {
+
+    @Test
+    void oneToMany() {
+        @Cleanup
+        SessionFactory sessionFactory = HibernateUtil.buildSessionFactory();
+        @Cleanup
+        Session session = sessionFactory.openSession();
+
+        session.beginTransaction();
+
+        Company company = session.get(Company.class, 1);
+        System.out.println("");
+
+        session.getTransaction().commit();
+    }
 
     @Test
     void checkGetReflectionApi() throws SQLException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchFieldException {

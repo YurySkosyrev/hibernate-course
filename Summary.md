@@ -889,6 +889,40 @@ CascadeType задаёт поведение зависимой сущности 
 
 Вообще не следует устанавливать cascade над маппингом сущностей, у которых нет Parent-Child зависимости.
 
+## OneToMany
+
+Одна компания относится к множеству userов.
+Возможны два вида связи:
+1. Uni Direction
+```java
+@OneToMany
+@JoinColumn(name = "company_id")
+private List<User> users;
+```
+При этом в сущности User могло бы отсутствовать поле Company
+
+2. By-direction 
+Чаще всего есть связь @ManyToOne и мы на неё добавляем связь @OneToMany.
+```java
+@OneToMany(mappedBy = "company") // имя поля в сущности User
+private List<User> users;
+```
+
+SessionFactory и Session можно закрывать с помощью аннотации @Cleanup Lombok, даже, если не реализован 
+интерфейс Autocloseable
+
+По умолчанию для связи @OneToMany установлена LAZY инициализация, а значит мы увидим не коллекцию при запросе, а прокси объект - 
+PersistentBag.
+
+Если изменить коллекцию с List на Set возникает зацикливание. Так как основная реализация Set - HashSet, то при добавлении нового user, вызывается Equals и HashCode, в User есть поле сompany, которая так же попадает в Equals и Hashcode потому, что мы её не исключали. Обычно exclude делают в связи @ManyToOne - т.е. в сущности Company.
+
+```java
+@ToString(exclude = "users")
+@EqualsAndHashCode(exclude = "users")
+public class Company {
+    ...
+}
+```
 
 
 
