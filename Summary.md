@@ -955,7 +955,37 @@ company_id INT REFERENCES company(id) ON DELETE CASCADE;
 
 Если у Company не стоит CascadeType.ALL, то при удалении User, у которого стоит ALL возникнет исключаение, т.к. будет попытка удалить компанию, хотя на неё ссылаются существующие userы.
 
+## Entity equals and hashCode
 
+Избежать ошибки StackOverFlow можно было бы если определить ToString и HashCode через id сущностей:
+
+```java
+@ToString(of = "id")
+@EqualsAndHashCode(of = "id")
+public class Company {
+    ...
+}
+```
+
+Но при этом, пока сущность находится в Transient состоянии, её id == null, а следоваетельно есил у нас будет добавление двух или более таких сущностей, то при дальнейшем помещении их в Set возникнет коллизия.
+
+Поэтому в зависимости от бизнесс-логики необходимо подобрать натуральный ключ. Для User это может быть username. company исключаем из ToString(), этот метод в основном используется в debug или при логгировании, так что отсутствие company не критично.
+
+```java
+@EqualsAndHashCode(of = "username")
+@ToString(exclude = "company")
+public class User {
+    ...
+}
+
+@EqualsAndHashCode(of = "name")
+@ToString(exclude = "users")
+public class Company {
+    ...
+}
+```
+
+Если таких уникальных полей нет, то ничего не остаётся кроме как использовать Equals и HashCode на основании всех полей, кроме маппинга ассоциаций, чтобы избежать зацикливания.
 
 
 
