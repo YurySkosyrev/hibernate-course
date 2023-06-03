@@ -987,6 +987,19 @@ public class Company {
 
 Если таких уникальных полей нет, то ничего не остаётся кроме как использовать Equals и HashCode на основании всех полей, кроме маппинга ассоциаций, чтобы избежать зацикливания.
 
+## PersistentCollection
 
+При LazyInitialisation Set, вместо коллекции объектов мы получаем proxy-объект PersistenceSet. В данном случае у нас не маппинг Type, а маппинг CollectionType. У CollectionType есть множество наследников для всех типов коллекций в Java.
+
+Для SetType при инициализации будет возвращаться объект класса PersistentSet(session). Сессия должна быть открыта при инициализации иначе возникнет LazyInitializationException.
+
+Для классов подобных SetType базовым является класс AbstractPErsistentCollection, который очень похож на HibernateProxy. Есть поле initializing, session, key и так далее.
+
+В классе PersistenceSet есть поле Set, в которое будет проинициализирована наша коллекция.
+
+Hibernate.initialize(company.getIsers()) - инициализация коллекции с помощью утилитного класса Hibernate. 
+В этом методе проверяется является ли полученный объект HibernateProxy - то есть реализует интерфейс для прокси-объектов не коллекций.
+
+Далее, если это не HibernateProxy, то проверяется на принадлежность PersistenceCollection. Если да, то вызывается метод forceInitialization. Если флаг initialized false, то вызывается метод initialize в котором на переданной session вызвается метод initializeCollection. 
 
 
