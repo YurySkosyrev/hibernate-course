@@ -1002,4 +1002,38 @@ Hibernate.initialize(company.getIsers()) - инициализация колле
 
 Далее, если это не HibernateProxy, то проверяется на принадлежность PersistenceCollection. Если да, то вызывается метод forceInitialization. Если флаг initialized false, то вызывается метод initialize в котором на переданной session вызвается метод initializeCollection. 
 
+## LazyInitializationException
+
+Если произошло закрытие сессии до обращения к ленивой коллекции или proxy-объекту, то произойдет Exception.
+
+```java
+    @Test
+    void checkLazyInitialisation() {
+        Company company = null;
+        try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory();
+        Session session = sessionFactory.openSession()) {
+            session.beginTransaction();
+
+            company = session.get(Company.class, 1);
+
+            session.getTransaction();
+        }
+        Set<User> users = company.getUsers();
+        System.out.println(users.size());
+    }
+```
+
+Exception возникает потому, что lazy-объекты содержат сессию, с помощью которой был сделан запрос. И так как она закрыта возникает Exception.
+
+В реальных приложениях сессии открываются и закрываются на уровне сервисов.
+
+![alt text](img/appStructure.jpg "appStructure")
+
+Если необходимо работать с данными на уровне Listener или Servlet, то используется паттерн DTO. Мы преоразуем Entity в DTO, извлекаем все необходимые данные и возвращаем на уровень Listner, Servlet.
+
+В Hibernate можно сразу получить proxy:
+
+```java
+session.getReference(Company.class, 1)
+```
 

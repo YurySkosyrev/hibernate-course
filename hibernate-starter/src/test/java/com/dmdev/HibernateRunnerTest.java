@@ -19,10 +19,26 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 class HibernateRunnerTest {
 
+
+    @Test
+    void checkLazyInitialisation() {
+        Company company = null;
+        try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory();
+        Session session = sessionFactory.openSession()) {
+            session.beginTransaction();
+
+            company = session.get(Company.class, 1);
+
+            session.getTransaction();
+        }
+        Set<User> users = company.getUsers();
+        System.out.println(users.size());
+    }
 
     @Test
     void deleteCompany() {
