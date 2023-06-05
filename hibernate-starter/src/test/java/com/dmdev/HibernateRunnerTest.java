@@ -32,7 +32,7 @@ class HibernateRunnerTest {
              Session session = sessionFactory.openSession()) {
             session.beginTransaction();
 
-            User user = session.get(User.class, 4L);
+            User user = session.get(User.class, 6L);
             System.out.println(user.getId());
 //            User user = User.builder()
 //                    .username("test2@gmail.com")
@@ -43,9 +43,8 @@ class HibernateRunnerTest {
 //                    .language("ru")
 //                    .build();
 //
-//            session.save(user);
 //            profile.setUser(user);
-//            session.save(profile);
+//            session.save(user);
 
             session.getTransaction().commit();
         }
