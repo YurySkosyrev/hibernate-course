@@ -1,15 +1,16 @@
 package com.dmdev.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.persistence.*;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(of = "name")
+@ToString(exclude = "users")
 @Builder
 @Entity
 public class Chat {
@@ -20,5 +21,9 @@ public class Chat {
 
     @Column(nullable = false, unique = true)
     private String name;
+
+    @Builder.Default
+    @ManyToMany(mappedBy = "chats")
+    private Set<User> users = new HashSet<>();
 
 }

@@ -1104,5 +1104,56 @@ CREATE TABLE users_chat (
 );
 ```
 
+Для связей @ManyToMany эффективнее использовать List.
+
+```java
+public class Chat {
+    @Builder.Default
+    @ManyToMany(mappedBy = "chats")
+    private Set<User> users = new HashSet<>();
+}
+
+public class User {
+    @Builder.Default
+    @ManyToMany
+    @JoinTable(
+            name = "users_chat",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "chat_id")
+    )
+}
+private Set<Chat> chats = new HashSet<>();
+
+// Не забываем устанавливать зависимость на уровне Java!!!
+public void addChat(Chat chat) {
+    chats.add(chat);
+    chat.getUsers().add(this);
+}
+```
+
+```java
+ @Test
+    void checkManyToMany() {
+        try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory();
+             Session session = sessionFactory.openSession()) {
+            session.beginTransaction();
+
+            User user = session.get(User.class, 1L);
+
+            Chat chat = Chat.builder()
+                    .name("dmdev")
+                    .build();
+            user.addChat(chat);
+            session.save(chat);
+
+            session.getTransaction().commit();
+        }
+    }
+```
+Добавление в таблицу users_chat происходит потому, что userу добавляют chat, а не наоборот. В Chat @ManyToMany(mappedBy = "chats") т.е. read-only. Т.е. можем только посмотреть какие userы есть в chat.
+
+Для работы с таблицей users_chat достаточно удалить или добавить user или chat из соответствующей коллекции, без использования Cascade.Type.
+
+
 
 
