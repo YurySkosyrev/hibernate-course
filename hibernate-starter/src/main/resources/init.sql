@@ -25,6 +25,17 @@ CREATE TABLE company (
     name VARCHAR(64) NOT NULL UNIQUE
 );
 
+CREATE TABLE chat (
+    id SERIAL PRIMARY KEY ,
+    name VARCHAR (64) NOT NULL UNIQUE
+);
+
+CREATE TABLE users_chat (
+    user_id BIGINT REFERENCES users(id),
+    chat_id BIGINT REFERENCES chat(id),
+    primary key (user_id, chat_id)
+);
+
 create sequence users_id_seq
 owned by users.id;
 

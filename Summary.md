@@ -1092,5 +1092,17 @@ private User user;
 
 Вывод: в случае bidirectional(mappedBy) связи LazyInitialisation возможна только при optional = false и не используется синтетический первичный ключ. Если ключ синтетический то придется в любом случае делать запрос в БД и тогда не будет смысл в Proxy-объекте.
 
+## ManyToMany
+
+Для реализации связи ManyToMany нужна вспомогательная таблица. Для таких таблиц отлично подходит добавление в DDL для каждой колонки - ON DELETE CASCADE (при удалении chat или user нет смысла в записях в users_chat)
+
+```sql
+CREATE TABLE users_chat (
+    user_id BIGINT REFERENCES users(id),
+    chat_id BIGINT REFERENCES chat(id),
+    primary key (user_id, chat_id)
+);
+```
+
 
 
