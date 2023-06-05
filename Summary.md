@@ -1037,3 +1037,15 @@ Exception возникает потому, что lazy-объекты содер
 session.getReference(Company.class, 1)
 ```
 
+## OrphanRemoval
+
+```java
+@OneToMany(orphanRemoval = true)
+private Set<User> users = new HashSet<>();
+```
+
+OrphanRemoval задает, что нужно делать с пользователем в таблице users, если пользователь удаляется из коллекции в сущности company.
+
+Нужно быть осторожным с этим свойством, т.к. может возникнуть ошибка целостности БД, если удаляемая сущность имеет зависимости с другими сущностями. Либо если установлен CascadeType.ALL, могут удалится и другие записи, с которыми есть связь.
+
+## OneToOne PrimaryKey

@@ -39,8 +39,8 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    @ManyToOne
-    //@JoinColumn(name = "company_id") умполчанию название сущность с маленькой буквы + _id
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
     private Company company;
 
 }

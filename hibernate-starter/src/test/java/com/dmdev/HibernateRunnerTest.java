@@ -26,6 +26,19 @@ class HibernateRunnerTest {
 
 
     @Test
+    void checkOrphanRemoval(){
+        try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory();
+             Session session = sessionFactory.openSession()) {
+            session.beginTransaction();
+
+            Company company = session.getReference(Company.class, 1);
+            company.getUsers().removeIf(user -> user.getId() == 1L);
+
+            session.getTransaction().commit();
+        }
+    }
+
+    @Test
     void checkLazyInitialisation() {
         Company company = null;
         try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory();
@@ -34,7 +47,7 @@ class HibernateRunnerTest {
 
             company = session.get(Company.class, 1);
 
-            session.getTransaction();
+            session.getTransaction().commit();
         }
         Set<User> users = company.getUsers();
         System.out.println(users.size());
