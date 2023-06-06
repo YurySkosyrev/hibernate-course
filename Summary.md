@@ -1154,6 +1154,86 @@ public void addChat(Chat chat) {
 
 Для работы с таблицей users_chat достаточно удалить или добавить user или chat из соответствующей коллекции, без использования Cascade.Type.
 
+## ManyToMany SeparateEntity
+
+Обычно дополнительная таблица для связи многие ко многим содержит не только два столбца с id
+
+```java
+public class User {
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user")
+    private Set<UserChat> userChats = new HashSet<>();
+}
+
+public class Chat {
+
+    @Builder.Default
+    @OneToMany(mappedBy = "chat")
+    private Set<UserChat> userChats = new HashSet<>();
+}
+
+public class UserChat {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    private User user;
+
+    @ManyToOne
+    @JoinColumn(name = "chat_id")
+    private Chat chat;
+
+    private Instant created_at;
+
+    private String created_by;
+
+    public void addUser(User user) {
+        this.user = user;
+        user.getUserChats().add(this);
+    }
+
+    public void addChat(Chat chat) {
+        this.chat = chat;
+        chat.getUserChats().add(this);
+    }
+
+}
+
+@Test
+    void checkManyToMany() {
+        try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory();
+             Session session = sessionFactory.openSession()) {
+            session.beginTransaction();
+
+            User user = session.get(User.class, 2L);
+            Chat chat = session.get(Chat.class, 1L);
+
+            UserChat userChat = UserChat.builder()
+                    .created_at(Instant.now())
+                    .created_by(user.getUsername())
+                    .build();
+           userChat.addChat(chat);
+           userChat.addUser(user); // можно переопределить Builder и не писать эти две строчки
+
+           session.save(userChat);
+
+            session.getTransaction().commit();
+        }
+    }
+```
+Порядок запросов:
+- select получение user
+- select получение profile т.к. связь OneToOne
+- select получение chat
+- select left outer join users_chat on chat т.к. в addChat запускаем геттер chat.getUserChats().add(this); т.к. это Lazy collection
+- select left outer join users_chat on users т.к. в addUser запускаем геттер user.getUserChats().add(this);  т.к. это Lazy collection
+- insert into users_chat
+
+left outer join можно заменить на inner join с помощью @ManyToOne(opotional = false)
+
 
 
 
