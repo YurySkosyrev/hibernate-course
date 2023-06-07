@@ -1234,6 +1234,14 @@ public class UserChat {
 
 left outer join можно заменить на inner join с помощью @ManyToOne(opotional = false)
 
+## Collection Performance
 
+При большом колличестве записей left outer join замедляет работу приложения. Можно не добавлять пользователя или чат в коллекцию, но тогда у нас
+будет не соответствие на уровне Java модели.
 
+Решение - вместо Set использовать List или Collection. Для этих коллекций есть специальная реализация в Hibernate - PersistentBag
+
+UNIQUE (user_id, chat_id) - по тому ключу, который стоит на первом месте в констрайнте можно искать с помощью индекса.
+
+С List меньше проблем из-за отстутствия автоматического вызова Equals и HashCode.
 
