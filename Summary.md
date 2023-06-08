@@ -1245,3 +1245,73 @@ UNIQUE (user_id, chat_id) - по тому ключу, который стоит 
 
 С List меньше проблем из-за отстутствия автоматического вызова Equals и HashCode.
 
+## Element Collection
+
+Создаем таблицу
+
+```sql
+CREATE TABLE company_locale (
+    company_id INT NOT NULL REFERENCES company(id) ,
+    lang VARCHAR(2) ,
+    description VARCHAR(128) NOT NULL ,
+    PRIMARY KEY (company_id, lang)
+);
+```
+
+Создаём Embeddable класс
+
+```java
+@Embeddable
+@Data
+@AllArgsConstructor(staticName = "of")
+@NoArgsConstructor
+public class LocaleInfo {
+
+    private String lang;
+    private String description;
+
+}
+```
+
+Добавляем поле в класс Company
+
+```java
+@ElementCollection
+@Builder.Default
+@CollectionTable(name = "company_locale", joinColumns = @JoinColumn(name = "company_id"))
+private List<LocaleInfo> locales = new ArrayList<>();
+```
+
+По умолчанию Hibernate пытается найти таблицу с наименованием Company (в нижнем регистре) _ locales
+
+Добавляем записи в таблицу company_locale
+
+```java
+ @Test
+    void localeInfo() {
+        try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory();
+             Session session = sessionFactory.openSession()) {
+            session.beginTransaction();
+
+            Company company = session.get(Company.class, 1);
+
+            company.getLocales().add(LocaleInfo.of("ru", "Описание на русском"));
+            company.getLocales().add(LocaleInfo.of("en", "English description"));
+
+            session.getTransaction().commit();
+        }
+    }
+```
+
+Можно уйти от дефолтного маппинга названия атрибута и названия столбца в таблице.
+
+```java
+  @AttributeOverride(name = "lang", @Column(name = "language"))
+```
+
+Если у нас есть справочная таблица, то мы можем только считывать из неё какой-либо столбец, но тогда нельзя insert в БД.
+
+```java
+ @Column(name = "description")
+    private List<String> locales = new ArrayList<>();
+```

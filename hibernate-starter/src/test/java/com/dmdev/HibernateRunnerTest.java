@@ -1,9 +1,6 @@
 package com.dmdev;
 
-import com.dmdev.entity.Chat;
-import com.dmdev.entity.Company;
-import com.dmdev.entity.User;
-import com.dmdev.entity.UserChat;
+import com.dmdev.entity.*;
 import com.dmdev.util.HibernateUtil;
 import lombok.Cleanup;
 import org.hibernate.Session;
@@ -27,6 +24,21 @@ import java.util.stream.Collectors;
 
 class HibernateRunnerTest {
 
+
+    @Test
+    void localeInfo() {
+        try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory();
+             Session session = sessionFactory.openSession()) {
+            session.beginTransaction();
+
+            Company company = session.get(Company.class, 1);
+            System.out.println(company.getLocales());
+            company.getLocales().add(LocaleInfo.of("ru", "Описание на русском"));
+//            company.getLocales().add(LocaleInfo.of("en", "English description"));
+
+            session.getTransaction().commit();
+        }
+    }
 
     @Test
     void checkManyToMany() {
@@ -61,19 +73,19 @@ class HibernateRunnerTest {
              Session session = sessionFactory.openSession()) {
             session.beginTransaction();
 
-            User user = session.get(User.class, 6L);
-            System.out.println(user.getId());
-//            User user = User.builder()
-//                    .username("test2@gmail.com")
-//                    .build();
-//
-//            Profile profile = Profile.builder()
-//                    .street("Kolasa 666")
-//                    .language("ru")
-//                    .build();
-//
-//            profile.setUser(user);
-//            session.save(user);
+//            User user = session.get(User.class, 6L);
+//            System.out.println(user.getId());
+            User user = User.builder()
+                    .username("test2@gmail.com")
+                    .build();
+
+            Profile profile = Profile.builder()
+                    .street("Kolasa 666")
+                    .language("ru")
+                    .build();
+
+            profile.setUser(user);
+            session.save(user);
 
             session.getTransaction().commit();
         }
