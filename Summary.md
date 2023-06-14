@@ -1315,3 +1315,32 @@ private List<LocaleInfo> locales = new ArrayList<>();
  @Column(name = "description")
     private List<String> locales = new ArrayList<>();
 ```
+
+## Collection Ordering
+
+Часто нам нужно хранить коллекции в упорядоченном виде. Есть два способа
+1. SQL-запрос (ORDER BY)
+
+@OrderBy (javax.persistence) т.к. он использует HQL. Суть HQL в том, что он использует название полей сущности, а не названия колонок в таблицах.
+
+```java
+@OrderBy("username DESC, personalInfo.lastname ASC")
+```
+
+2. Java-сортировка (в памяти)
+
+```java
+@SortNatural
+private Set<User> users = new TreeSet<>();
+```
+
+Чтобы пользователи сортировались при добавлении удобно использовать TreeSet, с помощью аннотации будут сортироваться юзеры, 
+полученные из БД с помощью get.
+
+@SortComparator - использовать собственный Comparator. Comparable предоставляет сортировку по умолчанию, которую нельзя переопределить, 
+а Comparator можно создать сколько угодно много.
+
+
+
+
+
