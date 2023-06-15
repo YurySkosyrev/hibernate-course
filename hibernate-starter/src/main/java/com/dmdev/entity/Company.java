@@ -23,20 +23,19 @@ public class Company {
 
     @Builder.Default
     @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true)
-//    @org.hibernate.annotations.OrderBy(clause = "username DESC, lastname ASC")
-//    @OrderBy("username DESC, personalInfo.lastname ASC")
-    @SortNatural
-    private SortedSet<User> users = new TreeSet<>();
+    @MapKey(name = "username")
+    private Map<String, User> users = new HashMap<>();
 
     @ElementCollection
     @Builder.Default
     @CollectionTable(name = "company_locale", joinColumns = @JoinColumn(name = "company_id"))
 //    @AttributeOverride(name = "lang", @Column(name = "language"))
     @Column(name = "description")
-    private List<String> locales = new ArrayList<>();
+    @MapKeyColumn(name = "lang")
+    private Map<String, String> locales = new HashMap<>();
 
     public void addUser(User user) {
-        users.add(user);
+        users.put(user.getUsername(), user);
         user.setCompany(this);
     }
 }

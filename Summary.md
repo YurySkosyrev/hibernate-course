@@ -1340,6 +1340,36 @@ private Set<User> users = new TreeSet<>();
 @SortComparator - использовать собственный Comparator. Comparable предоставляет сортировку по умолчанию, которую нельзя переопределить, 
 а Comparator можно создать сколько угодно много.
 
+## Maps in mapping
+
+```java
+public class Company {
+    ...
+    @Builder.Default
+    @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true)
+    @MapKey(name = "username")
+    @SortNatural
+    private Map<String, User> users = new TreeMap<>();
+    ...
+}
+```
+
+Если нужно чтобы коллекция была отсортирована, то лучше использовать TreeMap. @SortNatural - так же отсортирует коллекцию, полученную 
+с помощью метода get.
+
+Кроме @MapKey есть и другие аннотации
+
+@MapKeyClass - имя класса является ключем
+
+@MapKeyEnumeratred - ключ - Enum (по умолчанию ORDINAL)
+
+@MapKeyColumn - в отличии от @MapKey в качестве значения можно использовать не только сущность, но и String например.
+
+```java
+@MapKeyColumn(name = "lang")
+private Map<String, String> locales = new HashMap<>();
+```
+
 
 
 
