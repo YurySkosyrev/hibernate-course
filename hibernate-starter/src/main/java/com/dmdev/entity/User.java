@@ -20,7 +20,7 @@ import java.util.*;
 @Builder
 @Entity
 @Table(name = "Users")
-//@TypeDef(name = "dmdev", typeClass = JsonBinaryType.class)
+@TypeDef(name = "dmdev", typeClass = JsonBinaryType.class)
 public class User implements Comparable<User> {
 
     @Id
@@ -33,8 +33,8 @@ public class User implements Comparable<User> {
     @Column(unique = true)
     private String username;
 
-//    @Type(type = "jsonb")
-//    private String info;
+    @Type(type = "jsonb")
+    private String info;
 
     @Enumerated(EnumType.STRING)
     private Role role;

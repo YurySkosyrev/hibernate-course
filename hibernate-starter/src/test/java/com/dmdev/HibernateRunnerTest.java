@@ -1,6 +1,7 @@
 package com.dmdev;
 
 import com.dmdev.entity.*;
+import com.dmdev.util.HibernateTestUtil;
 import com.dmdev.util.HibernateUtil;
 import lombok.Cleanup;
 import org.hibernate.Session;
@@ -23,6 +24,22 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 class HibernateRunnerTest {
+
+    @Test
+    void checkContainers() {
+        try (SessionFactory sessionFactory = HibernateTestUtil.buildSessionFactory();
+             Session session = sessionFactory.openSession()) {
+            session.beginTransaction();
+
+            Company com = Company.builder()
+                    .name("Google")
+                    .build();
+            session.save(com);
+
+            session.getTransaction().commit();
+        }
+    }
+
 
     @Test
     void checkH2() {

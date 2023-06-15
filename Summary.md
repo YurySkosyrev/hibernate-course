@@ -1419,6 +1419,65 @@ Hibernate сам генерирует DDL, но он отличается от �
 ```
 columnDefinition - можно добавить свой sql, который будет использоваться при автогенерации DDL.
 
+## Testcontainers
+
+Библиотека Testcontainers поднимает контейнер при запуске теста и тушит его по окончанию.
+
+```java
+testImplementation 'org.testcontainers:postgresql:1.16.0'
+```
+
+Один из плюсов такого подхода - гаранитрование одного и того же состояния в тестах и реальной БД.
+
+```java
+@UtilityClass
+public class HibernateUtil {
+
+    public static SessionFactory buildSessionFactory() {
+        Configuration configuration = buildConfiguration();
+        configuration.configure();
+
+        return configuration.buildSessionFactory();
+    }
+
+    public static Configuration buildConfiguration() {
+        Configuration configuration = new Configuration();
+        configuration.addAnnotatedClass(User.class);
+        configuration.setPhysicalNamingStrategy(new CamelCaseToUnderscoresNamingStrategy());
+        configuration.addAttributeConverter(new BirthDayConverter());
+        configuration.registerTypeOverride(new JsonBinaryType());
+        configuration.configure();
+        return configuration;
+    }
+}
+
+@UtilityClass
+public class HibernateTestUtil {
+
+    private static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:13");
+    
+     static {
+        postgres.start();
+    }
+
+    public static SessionFactory buildSessionFactory() {
+        Configuration configuration = HibernateUtil.buildConfiguration();
+        configuration.setProperty("hibernate.connection.url", postgres.getJdbcUrl());
+        configuration.setProperty("hibernate.connection.username", postgres.getUsername());
+        configuration.setProperty("hibernate.connection.password", postgres.getPassword());
+        configuration.configure();
+
+        return configuration.buildSessionFactory();
+    }
+```
+
+Блок статической инициализации static обеспечит ровно один контейнер для всех тестов. При первом обращении к классу будут проинициализированы все его статические поля и блок static.
+
+configuration.configure(); - подтягивает дефолтный ресурс (xml конфиг файл).
+
+До вызова метода configure нужно получить url, username, password из переменной контейнера и установить их в configuration.
+
+Есть несколько стратегий, как Containers понимает, что нужно тушить контейнер. Одна из них - проверка ConnectionPool, существует ли ConnectionPool к данному образу. Если образ не содержит ни одного открытого Connection, то его можно затушить.
 
 
 
