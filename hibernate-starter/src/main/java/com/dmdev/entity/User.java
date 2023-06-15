@@ -21,7 +21,7 @@ import java.util.*;
 @Entity
 @Table(name = "Users")
 @TypeDef(name = "dmdev", typeClass = JsonBinaryType.class)
-public class User implements Comparable<User> {
+public class User implements Comparable<User>, BaseEntity<Long> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

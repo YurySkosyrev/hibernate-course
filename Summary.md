@@ -1479,5 +1479,102 @@ configuration.configure(); - подтягивает дефолтный ресу�
 
 Есть несколько стратегий, как Containers понимает, что нужно тушить контейнер. Одна из них - проверка ConnectionPool, существует ли ConnectionPool к данному образу. Если образ не содержит ни одного открытого Connection, то его можно затушить.
 
+## MappedSuperclass
 
+Маппинг наследования сущностей в Hibernate. Маппинг полей - базовый класс не является отдельной сущностью Hibernate.
 
+Можно вынести Id в отдельную сущность, т.к. это поле повторяется у всех сущностей.
+
+```java
+
+@Getter
+@Setter
+@MappedSuperclass
+public abstract class BaseEntity<T extends Serializable> {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private T id;
+}
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@Entity
+@Table(name = "users_chat")
+public class UserChat extends BaseEntity<Long>{
+
+//    @Id
+//    @GeneratedValue(strategy = GenerationType.IDENTITY)
+//    private Long id;
+
+    @ManyToOne
+    private User user;
+
+    @ManyToOne
+    @JoinColumn(name = "chat_id")
+    private Chat chat;
+
+    private Instant created_at;
+
+    private String created_by;
+
+    public void addUser(User user) {
+        this.user = user;
+        user.getUserChats().add(this);
+    }
+
+    public void addChat(Chat chat) {
+        this.chat = chat;
+        chat.getUserChats().add(this);
+    }
+...
+}
+```
+
+Базовый класс для идентификатора должен быть параметризованным, но обязательно Сериализуемым, т.е. extends Serializable.
+
+@MappedSuperclass - специальная Hibernate аннотация, так же нужны getter и setter.
+
+Такое наследование подойдёт только если у всех сущностей автогенерация id. Обычно BaseEntity делают интерфейсом, где есть два метода get/set id, все Entity обязаны иметь id, поэтому эти методы подходят для всех сущностей.
+
+```java
+public interface BaseEntity<T extends Serializable> {
+
+    void setId(T id);
+
+    T getId();
+}
+```
+
+created_at, created_by можно выделить в отдельную сущность для аудита.
+
+```java
+@MappedSuperclass
+@Getter
+@Setter
+public abstract class AuditableEntity <T extends Serializable> implements BaseEntity<T>{
+
+    private Instant created_at;
+
+    private String created_by;
+}
+```
+Все AuditableEntity так же являются Entity, поэтому мы так же можем его параметризовать <T extends Serializable> и реализовать BaseEntity. Чтобы все AuditableEntity сущности не дублировали эту параметризацию и наследовения.
+
+Тогда в тех сущностях, где будет AuditableEntity
+
+```java
+public class UserChat extends AuditableEntity<Long> {
+    ...
+}
+```
+
+Где не будет просто реализуем BaseEntity в этом случае не будет ограничения на стратегию выбора идентификатора.
+
+```java
+public class User implements Comparable<User>, BaseEntity<Long> {
+    ...
+}
+```
