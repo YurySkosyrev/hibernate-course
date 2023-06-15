@@ -24,6 +24,20 @@ import java.util.stream.Collectors;
 
 class HibernateRunnerTest {
 
+    @Test
+    void checkH2() {
+        try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory();
+             Session session = sessionFactory.openSession()) {
+            session.beginTransaction();
+
+            Company com = Company.builder()
+                    .name("Google")
+                    .build();
+            session.save(com);
+
+            session.getTransaction().commit();
+        }
+    }
 
     @Test
     void localeInfo() {
