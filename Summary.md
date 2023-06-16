@@ -1578,3 +1578,72 @@ public class User implements Comparable<User>, BaseEntity<Long> {
     ...
 }
 ```
+
+## Стратегии наследования в Hibernate
+
+![alt text](img/inheritance.jpg "jdbc-structure")
+
+Создадим два класса наследника User
+
+```java
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Entity
+public class Programmer extends User{
+
+    @Enumerated(EnumType.STRING) // чтобы в БД хранилось в виде строки
+    private Language language;
+
+    @Builder // можем использовать билдер со всеми полями
+    public Programmer(Long id, PersonalInfo personalInfo, String username, String info, Role role, Company company, 
+                      Profile profile, List<UserChat> userChats, Language language) {
+        super(id, personalInfo, username, info, role, company, profile, userChats);
+        this.language = language;
+    }
+}
+
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Entity
+public class Manager extends User {
+
+    private String projectName;
+
+    @Builder
+    public Manager(Long id, PersonalInfo personalInfo, String username, String info, Role role, 
+                   Company company, Profile profile, List<UserChat> userChats, String projectName) {
+        super(id, personalInfo, username, info, role, company, profile, userChats);
+        this.projectName = projectName;
+    }
+}
+
+```
+
+## TABLE_PER_CLASS
+
+Каждый из наследников это просто отдельная таблица. Общие поля дублируются во всех таблицах.
+
+```java
+@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+public class User implements Comparable<User>, BaseEntity<Long> {
+...
+}
+```
+
+Для TABLE_PER_CLASS нельзя использовать GenerationType.IDENTITY, т.к. в каждой таблице будет свой IDENTITY и нас будут две сущности с одним и тем же ID, нужно использовать общий SEQUENCE.
+
+При попытке получить Programmer будет выполнен простой select в таблицу Programmer.
+
+А при попытке получить User будет выполнен select в каждую таблицу, далее выполнен union all результата. При union all таблицы должны состоять из одинакового колличества колонок и типов данных из обоих множеств, поэтому отсутствующие поля объявляются как null::varchar as language. Так же добавляется строка clazz_, чтобы Hibernate понимал объект какого класса ему нужно создать.
+
+Минусы:
+- дублируем общие поля в таблицах, если добавляем общее поле, то нужно менять все таблицы
+- если обращаемся к сущности базового класса, то должны делать union
+- должны использовать общую Sequence
+
+Плюсы:
+- если нужна конкретная сущность (Programmer), то мы обращаемся в конкретную таблицу.
+
