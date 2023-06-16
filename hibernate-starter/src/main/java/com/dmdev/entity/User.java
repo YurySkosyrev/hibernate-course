@@ -20,7 +20,8 @@ import java.util.*;
 @Entity
 @Table(name = "Users")
 @TypeDef(name = "dmdev", typeClass = JsonBinaryType.class)
-@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "type")
 public abstract class User implements Comparable<User>, BaseEntity<Long> {
 
     @Id

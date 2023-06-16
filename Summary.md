@@ -1647,3 +1647,40 @@ public class User implements Comparable<User>, BaseEntity<Long> {
 Плюсы:
 - если нужна конкретная сущность (Programmer), то мы обращаемся в конкретную таблицу.
 
+## SINGLE_TABLE
+
+Создаётся одна общая таблица в которую записываются все колонки из таблиц-наследников и колонка type, которая позволяет понять, какой класс нужно инстанцировать.
+
+Необходимо добавить название колонки type (по умолчанию DTYPE) и значения для каждой сущности-наследника (по умолчанию имя класса)
+
+```java
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "type")
+public abstract class User implements Comparable<User>, BaseEntity<Long> {
+    ...
+}
+
+@DiscriminatorValue(value = "manager")
+public class Manager extends User {
+    ...
+}
+
+@DiscriminatorValue(value = "programmer")
+public class Programmer extends User{
+    ...
+}
+```
+
+В этом случае маппинга наследования User может быть самостоятельной сущностью. Так же можно снова использовать GenerationType.IDENTITY.
+
+При запросе Programmer будет фильтрация в sql по колонке type: where type = ...
+
+Минусы:
+- так как одна общая таблица, то не можем давать Constraint на поля (not null)
+- при получении определенного типа наследника мы должны перебрать все записи, в отличии от TABLE_PER_CLASS, когда мы обращались в одну таблицу.
+
+Плюсы:
+- при получении общео родителя обращение идёт к одной таблице без использования union all, что быстрее
+- можем использовать GenerationType.IDENTITY
+
+Т.о. SINGLE_TABLE простая в реализации и довольно часто используется в реальных приложениях, но есть проблемы с денормализацией.
