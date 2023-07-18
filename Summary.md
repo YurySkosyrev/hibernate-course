@@ -1684,3 +1684,65 @@ public class Programmer extends User{
 - можем использовать GenerationType.IDENTITY
 
 Т.о. SINGLE_TABLE простая в реализации и довольно часто используется в реальных приложениях, но есть проблемы с денормализацией.
+
+## JOIN
+
+Плюсы:
+1. Данные нормализованы, общие поля в общей таблице.
+
+Минусы:
+1. Усложняются операции вставки, удаления, обновления - нужно работать сразу с двумя таблицами.
+2. Усложняется select для получения programmer нужно делать inner join. А для получения user необходимо делать left outer join на все таблицы.
+
+## HQL
+
+HQL отличается от SQL в том, что мы оперируем Hibernate сущностями.
+
+```Java
+  List<User> resultList = session.createQuery("select u from User u where u.personalInfo.firstname = 'Ivan'", User.class).list();
+```
+
+createQuery возвращает объект типа Query с множеством методов возвращающих результат, либо устанавливающих параметры запроса. Аналог PrepareStatement.
+
+Параметр 'Ivan' необходимо параметризовать
+
+PrepareStatement формат.
+```Java
+String name = "Ivan";
+List<User> resultList = session.createQuery(
+    "select u from User u where u.personalInfo.firstname = ?1", User.class)
+        .setParameter(1, name)
+        .list();
+```
+
+Именованный формат
+```Java
+List<User> resultList = session.createQuery(
+    "select u from User u where u.personalInfo.firstname = :firstname", User.class)
+        .setParameter("firstname", name)
+        .list();
+```
+
+При join обращаемся к сущности через поля, а не через условие соединения таблицы ON.
+
+```Java
+List<User> resultList = session.createQuery(
+    "select u from User u " +
+    "join u.company c " +
+    "where u.personalInfo.firstname = :firstname and c.name = :companyName", User.class)
+        .setParameter("firstname", name)
+        .setParameter("companyName", "Google")
+        .list();
+```
+
+Можно делать неявный Join обращаясь сразу к полю User.company.
+
+```Java
+List<User> resultList = session.createQuery(
+    "select u from User u " +
+//  "join u.company c " +
+    "where u.personalInfo.firstname = :firstname and u.company.name = :companyName", User.class)
+        .setParameter("firstname", name)
+        .setParameter("companyName", "Google")
+        .list();
+```

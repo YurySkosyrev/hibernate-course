@@ -17,13 +17,38 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 class HibernateRunnerTest {
+
+    @Test
+    void checkHql() {
+
+        try (SessionFactory sessionFactory = HibernateTestUtil.buildSessionFactory();
+             Session session = sessionFactory.openSession()) {
+            session.beginTransaction();
+
+            String name = "Ivan";
+//            List<User> resultList = session.createQuery(
+//                            "select u from User u where u.personalInfo.firstname = ?1", User.class)
+//                    .setParameter(1, name)
+//                    .list();
+
+            List<User> resultList = session.createQuery(
+                            "select u from User u " +
+//                                    "join u.company c " +
+                                    "where u.personalInfo.firstname = :firstname and u.company.name = :companyName", User.class)
+                    .setParameter("firstname", name)
+                    .setParameter("companyName", "Google")
+                    .list();
+
+            session.getTransaction().commit();
+        }
+
+    }
 
     @Test
     void checkContainers() {
