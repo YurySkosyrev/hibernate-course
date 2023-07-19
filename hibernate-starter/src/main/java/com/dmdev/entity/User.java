@@ -12,6 +12,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 
+@NamedQuery(name = "findUserByName", query = "select u from User u " +
+                                    "left join u.company c " +
+        "where u.personalInfo.firstname = :firstname and c.name = :companyName")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

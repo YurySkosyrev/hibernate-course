@@ -1746,3 +1746,44 @@ List<User> resultList = session.createQuery(
         .setParameter("companyName", "Google")
         .list();
 ```
+
+session позволяет делать именованные запросы - вынести в одно место часто повторяющийся запрос и обращаться к нему по имени
+
+```Java
+@NamedQuery(name = "findUserByName", query = "select u from User u " +
+                                    "left join u.company c " +
+        "where u.personalInfo.firstname = :firstname and c.name = :companyName")
+public abstract class User implements Comparable<User>, BaseEntity<Long> {
+}
+
+   List<User> resultList = session.createNamedQuery("findUserByName", User.class)
+                    .setParameter("firstname", name)
+                    .setParameter("companyName", "Google")
+                    .list();
+
+```
+
+Так же в query можно устанавливать параметры запроса с помощью setHint
+
+- FLUSH_MODE - нужно ли вызывать flush у сессии перед тем как делать запрос. 
+
+есть даже отдельный метод setFlushMode()
+
+ Hibernate flush вызывается ещё в двух случаях: 
+ - вызываем метод flush у сессии 
+ - закрываем транзакцию
+
+ query позволяет создавать insert, delete, update запросы.
+
+ ```Java
+   int countRows = session.createQuery("update User u set u.role = 'ADMIN'")
+                    .executeUpdate();
+ ```
+
+ Так же session позволяет использовать чистый sql
+
+ ```Java
+   session.createNamedQuery("select u.* from users u where u.firstname = 'Ivan'");
+ ```
+
+ Возвращаемый ResultSet из query мапится на сущности и добавляется в PersistenceContext
