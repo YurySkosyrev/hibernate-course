@@ -9,6 +9,7 @@ import javax.persistence.Column;
 import javax.persistence.Embeddable;
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.LocalDate;
 
 @Data
 @NoArgsConstructor
@@ -22,5 +23,5 @@ public class PersonalInfo implements Serializable {
     private String firstname;
     private String lastname;
 
-    private Birthday birthDate;
+    private LocalDate birthDate;
 }

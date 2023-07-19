@@ -12,19 +12,16 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 
-@NamedQuery(name = "findUserByName", query = "select u from User u " +
-                                    "left join u.company c " +
-        "where u.personalInfo.firstname = :firstname and c.name = :companyName")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "username")
-@ToString(exclude = {"company", "profile", "userChats"})
+@ToString(exclude = {"company", "profile", "userChats", "payments"})
+@Builder
 @Entity
-@Table(name = "Users")
+@Table(name = "users", schema = "public")
 @TypeDef(name = "dmdev", typeClass = JsonBinaryType.class)
-@Inheritance(strategy = InheritanceType.JOINED)
-public abstract class User implements Comparable<User>, BaseEntity<Long> {
+public class User implements Comparable<User>, BaseEntity<Long> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
@@ -53,9 +50,16 @@ public abstract class User implements Comparable<User>, BaseEntity<Long> {
     @OneToMany(mappedBy = "user")
     private List<UserChat> userChats = new ArrayList<>();
 
+    @Builder.Default
+    @OneToMany(mappedBy = "receiver")
+    private List<Payment> payments = new ArrayList<>();
 
     @Override
     public int compareTo(User o) {
         return username.compareTo(o.username);
+    }
+
+    public String fullName() {
+        return getPersonalInfo().getFirstname() + " " + getPersonalInfo().getLastname();
     }
 }
