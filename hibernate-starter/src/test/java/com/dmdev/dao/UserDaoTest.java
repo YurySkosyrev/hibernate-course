@@ -1,5 +1,6 @@
 package com.dmdev.dao;
 
+import com.dmdev.dto.CompanyDto;
 import com.dmdev.entity.Payment;
 import com.dmdev.entity.User;
 import com.dmdev.util.HibernateTestUtil;
@@ -120,13 +121,13 @@ class UserDaoTest {
         @Cleanup Session session = sessionFactory.openSession();
         session.beginTransaction();
 
-        List<Object[]> results = userDao.findCompanyNamesWithAvgUserPaymentsOrderedByCompanyName(session);
+        List<CompanyDto> results = userDao.findCompanyNamesWithAvgUserPaymentsOrderedByCompanyName(session);
         assertThat(results).hasSize(3);
 
-        List<String> orgNames = results.stream().map(a -> (String) a[0]).collect(toList());
+        List<String> orgNames = results.stream().map(CompanyDto::getName).collect(toList());
         assertThat(orgNames).contains("Apple", "Google", "Microsoft");
 
-        List<Double> orgAvgPayments = results.stream().map(a -> (Double) a[1]).collect(toList());
+        List<Double> orgAvgPayments = results.stream().map(CompanyDto::getAmount).collect(toList());
         assertThat(orgAvgPayments).contains(410.0, 400.0, 300.0);
 
         session.getTransaction().commit();
