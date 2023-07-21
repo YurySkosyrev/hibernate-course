@@ -2253,5 +2253,157 @@ public class UserDao {
 
 При использовании Eager не будет работать для запросов, т.к. нельзя использовать limit, offset, другие агрегирующие функции.
 
-Вместо одного запроса получаем ещё N запросов, в зависимости от того, сколько строк получили, поэтому и проблема N+1.
+Суть проблемы N + 1: 
+- имеется связь 1 к 1 или 1 к N: 5 пользователей и у каждого есть выплата.
+- для получения списка всех пользователей необходимо сделать 1 запрос в таблицу пользователей и 5 запросов в таблицу выплат для каждого пользователя
+- т.е. всего N + 1 = 6 запросов.
+
+## @BatchSize
+
+Запрос в БД происходит не с условием where = , а с условием where in , т.е. за одни запрос можно получить несколько записей. Но это полностью не решает проблему N + 1.
+
+```Java
+public class User implements Comparable<User>, BaseEntity<Long> {
+
+    @Builder.Default
+    @BatchSize(size = 3)
+    @OneToMany(mappedBy = "receiver")
+    private List<Payment> payments = new ArrayList<>();
+
+}
+```
+
+В случае связи @ManyToOne @BatchSize нужно ставить над классом, который One.
+
+Но при N -> бесконечность, #BatchSize не решает проблему.
+
+## @Fetch
+
+@Fetch(FetchMode.)
+
+- FetchMode.SUBSELECT - подходит только для коллекций. При запросе выплат происходит подзапрос id юзеров и с результатом этого подзапроса сравниваются reciver_id
+
+```Java
+Hibernate: 
+    select
+        user0_.id as id1_0_,
+        user0_.company_id as company_8_0_,
+        user0_.info as info2_0_,
+        user0_.birth_date as birth_da3_0_,
+        user0_.firstname as firstnam4_0_,
+        user0_.lastname as lastname5_0_,
+        user0_.role as role6_0_,
+        user0_.username as username7_0_ 
+    from
+        public.users user0_
+Hibernate: 
+    select
+        payments0_.receiver_id as receiver3_4_1_,
+        payments0_.id as id1_4_1_,
+        payments0_.id as id1_4_0_,
+        payments0_.amount as amount2_4_0_,
+        payments0_.receiver_id as receiver3_4_0_ 
+    from
+        payment payments0_ 
+    where
+        payments0_.receiver_id in (
+            select
+                user0_.id 
+            from
+                public.users user0_
+        )
+```
+
+- FetchMode.JOIN, FetchMode.SELECT можно использовать для ManyToOne, в других случаях нет смысла т.к. получаем декартово произведение записей и снова не можем использовать агрегирующие функции.
+
+FetchMode.JOIN над Company (ManyToOne) сработает только если получать сущность по id (а не в hql) в других случаях так же будет N запросов и проблем N + 1 не решена.
+
+Так же он плох тем, что Payment получается подзапросом всегда, даже если мы это не хотим. Может возникнуть ситуация когда пользователя нужно получить сразу с Payment.
+
+Либо одного пользователя, тогда нужно использовать EAGER.
+
+## Query Fetch
+
+Fetch добавляет колонки из таблиц в результирующий набор в select, что позволяет не делать дополнительных запросов. Это работает в случае запросов через HQL, CriteriaAPI, QueryDSL.
+
+Использование в HQL.
+
+```Java
+    List<User> users = session.createQuery(
+                    "select u from User u join fetch u.payments where 1 = 1", User.class)
+                    .list();
+```
+
+```Java
+  select
+        user0_.id as id1_0_0_,
+        payments1_.id as id1_4_1_,
+        user0_.company_id as company_8_0_0_,
+        user0_.info as info2_0_0_,
+        user0_.birth_date as birth_da3_0_0_,
+        user0_.firstname as firstnam4_0_0_,
+        user0_.lastname as lastname5_0_0_,
+        user0_.role as role6_0_0_,
+        user0_.username as username7_0_0_,
+        payments1_.amount as amount2_4_1_,
+        payments1_.receiver_id as receiver3_4_1_,
+        payments1_.receiver_id as receiver3_4_0__,
+        payments1_.id as id1_4_0__ 
+    from
+        public.users user0_ 
+    inner join
+        payment payments1_ 
+            on user0_.id=payments1_.receiver_id 
+    where
+        1=1
+```
+
+Использование в Criteria API. Fetch делает после того join, который мы хотим проинициализировать
+
+```Java
+  CriteriaBuilder cb = session.getCriteriaBuilder();
+        CriteriaQuery<Payment> criteria = cb.createQuery(Payment.class);
+        Root<Payment> payment = criteria.from(Payment.class);
+        Join<Payment, User> user = payment.join("receiver");
+        payment.fetch("receiver");
+
+        Join<User, Company> company = user.join("company");
+
+        criteria.select(payment).where(
+                cb.equal(company.get("name"), companyName)
+        )
+                .orderBy(
+                        cb.asc(user.get("personalInfo").get("firstname")),
+                        cb.asc(payment.get("amount"))
+                );
+
+        return session.createQuery(criteria)
+                .list();
+```
+
+Использование в QueryDSL.
+
+```Java
+    public List<Payment> findAllPaymentsByCompanyName(Session session, String companyName) {
+
+        return new JPAQuery<Payment>(session)
+                .select(payment)
+                .from(payment)
+                .join(payment.receiver, user).fetchJoin() // благодаря второму параметру можем обращаться к user
+                .join(user.company, company)
+                .where(company.name.eq(companyName))
+                .orderBy(user.personalInfo.firstname.asc(), payment.amount.asc())
+                .fetch();
+    }
+```
+
+Т.к. в Payment User маппинг Many To One, то можно использовать все агрегирующие функции.
+
+В случае работы с одной единственной сущностью, если везде стоят Lazy, то при запросе по id, всё равно будет делать дополнительные запросы. Поэтому Hibernate предоставляет другие средства, чтобы сразу инициализировать коллекции сущностей, либо нет.
+
+
+
+
+
+
 

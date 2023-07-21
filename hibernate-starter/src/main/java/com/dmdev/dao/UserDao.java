@@ -1,6 +1,7 @@
 package com.dmdev.dao;
 
 import com.dmdev.dto.PaymentFilter;
+import com.dmdev.entity.Company;
 import com.dmdev.entity.Payment;
 import com.dmdev.entity.User;
 import com.querydsl.core.Tuple;
@@ -10,6 +11,10 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.hibernate.Session;
 
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.Root;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -136,24 +141,26 @@ public class UserDao {
 //        CriteriaBuilder cb = session.getCriteriaBuilder();
 //        CriteriaQuery<Payment> criteria = cb.createQuery(Payment.class);
 //        Root<Payment> payment = criteria.from(Payment.class);
-//        Join<Payment, User> user = payment.join(Payment_.receiver);
-//        Join<User, Company> company = user.join(User_.company);
+//        Join<Payment, User> user = payment.join("receiver");
+//        payment.fetch("receiver");
+//
+//        Join<User, Company> company = user.join("company");
 //
 //        criteria.select(payment).where(
-//                cb.equal(company.get(Company_.name), companyName)
+//                cb.equal(company.get("name"), companyName)
 //        )
 //                .orderBy(
-//                        cb.asc(user.get(User_.personalInfo).get(PersonalInfo_.firstname)),
-//                        cb.asc(payment.get(Payment_.amount))
+//                        cb.asc(user.get("personalInfo").get("firstname")),
+//                        cb.asc(payment.get("amount"))
 //                );
-//
+
 //        return session.createQuery(criteria)
 //                .list();
 
         return new JPAQuery<Payment>(session)
                 .select(payment)
                 .from(payment)
-                .join(payment.receiver, user) // благодаря второму параметру можем обращаться к user
+                .join(payment.receiver, user).fetchJoin() // благодаря второму параметру можем обращаться к user
                 .join(user.company, company)
                 .where(company.name.eq(companyName))
                 .orderBy(user.personalInfo.firstname.asc(), payment.amount.asc())
