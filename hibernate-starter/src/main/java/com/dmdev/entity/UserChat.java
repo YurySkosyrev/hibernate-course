@@ -1,16 +1,14 @@
 package com.dmdev.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.persistence.*;
 import java.time.Instant;
 
 @Data
-@AllArgsConstructor
+@EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 @Entity
 @Table(name = "users_chat")
@@ -27,14 +25,13 @@ public class UserChat extends AuditableEntity<Long> {
     @JoinColumn(name = "chat_id")
     private Chat chat;
 
-    public void addUser(User user) {
+    public void setUser(User user) {
         this.user = user;
-        user.getUserChats().add(this);
+        this.user.getUserChats().add(this);
     }
 
-    public void addChat(Chat chat) {
+    public void setChat(Chat chat) {
         this.chat = chat;
-        chat.getUserChats().add(this);
+        this.chat.getUserChats().add(this);
     }
-
 }

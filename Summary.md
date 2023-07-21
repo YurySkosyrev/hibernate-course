@@ -2184,3 +2184,74 @@ public class UserDao {
     }
 }
 ```
+
+Обычно предикаты создаются внутри сервисов, а не внутри DAO, в метод принимается предикат, а не фильтр. Таким образом реализовано в Spring. У него отличная поддержка Querydsl (интерфейс QuerydslPredicateExecutor)
+
+```Java
+
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
+    public class QPredicate {
+        private final List<Predicate> predicates = new ArrayList<>();
+
+        public static QPredicate builder() {
+            return new QPredicate();
+        }
+
+        public <T> QPredicate add(T object, Function<T, Predicate> function) {
+            if (object != null) {
+                predicates.add(function.apply(object));
+            }
+            return this;
+        }
+
+        public Predicate buildAnd() {
+            return ExpressionUtils.allOf(predicates);
+        }
+
+        public Predicate buildOr() {
+            return ExpressionUtils.anyOf(predicates);
+        }
+    }
+
+    public Double findAveragePaymentAmountByFirstAndLastNames(Session session, PaymentFilter filter) {
+        Predicate predicate = QPredicate.builder()
+                .add(filter.getLastName(), user.personalInfo.firstname::eq)
+                .add(filter.getLastName(), user.personalInfo.lastname::eq)
+                .buildAnd();
+
+        return new JPAQuery<Double>(session)
+                .select(payment.amount.avg())
+                .from(payment)
+                .join(payment.receiver, user)
+                .where(predicate)
+                .fetchOne();
+    }
+
+    @Test
+    void findAveragePaymentAmountByFirstAndLastNames() {
+        @Cleanup Session session = sessionFactory.openSession();
+        session.beginTransaction();
+
+        PaymentFilter filter = PaymentFilter.builder()
+                .firstName("Bill")
+                .lastName("Gates")
+                .build();
+
+        Double averagePaymentAmount = userDao.findAveragePaymentAmountByFirstAndLastNames(session, filter);
+        assertThat(averagePaymentAmount).isEqualTo(300.0);
+
+        session.getTransaction().commit();
+    }
+```
+
+## Введение в проблему N + 1 запросов.
+
+Правила:
+1. Не использовать 1 к 1 связь, когда в подчиненной таблице ключи синтетические.
+
+2. Использовать Lazy везде.
+
+При использовании Eager не будет работать для запросов, т.к. нельзя использовать limit, offset, другие агрегирующие функции.
+
+Вместо одного запроса получаем ещё N запросов, в зависимости от того, сколько строк получили, поэтому и проблема N+1.
+

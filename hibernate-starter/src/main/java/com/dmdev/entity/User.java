@@ -12,11 +12,17 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 
+import static com.dmdev.util.StringUtils.SPACE;
+
+@NamedQuery(name = "findUserByName", query = "select u from User u " +
+        "left join u.company c " +
+        "where u.personalInfo.firstname = :firstname and c.name = :companyName " +
+        "order by u.personalInfo.lastname desc")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "username")
-@ToString(exclude = {"company", "profile", "userChats", "payments"})
+@ToString(exclude = {"company", "userChats", "payments"})
 @Builder
 @Entity
 @Table(name = "users", schema = "public")
@@ -24,31 +30,36 @@ import java.util.*;
 public class User implements Comparable<User>, BaseEntity<Long> {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @AttributeOverride(name = "birthDate", column =  @Column(name = "birth_date"))
+    @AttributeOverride(name = "birthDate", column = @Column(name = "birth_date"))
     private PersonalInfo personalInfo;
 
     @Column(unique = true)
     private String username;
 
-    @Type(type = "jsonb")
+    @Type(type = "dmdev")
     private String info;
 
     @Enumerated(EnumType.STRING)
     private Role role;
 
+
+//    @OneToOne(
+//            mappedBy = "user",
+//            cascade = CascadeType.ALL,
+//            fetch = FetchType.LAZY
+//    )
+//    private Profile profile;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "company_id")
+    @JoinColumn(name = "company_id") // company_id
     private Company company;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private Profile profile;
-
-//    @Builder.Default
+    @Builder.Default
     @OneToMany(mappedBy = "user")
-    private List<UserChat> userChats = new ArrayList<>();
+    private Set<UserChat> userChats = new HashSet<>();
 
     @Builder.Default
     @OneToMany(mappedBy = "receiver")
@@ -60,6 +71,6 @@ public class User implements Comparable<User>, BaseEntity<Long> {
     }
 
     public String fullName() {
-        return getPersonalInfo().getFirstname() + " " + getPersonalInfo().getLastname();
+        return getPersonalInfo().getFirstname() + SPACE + getPersonalInfo().getLastname();
     }
 }

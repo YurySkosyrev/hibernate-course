@@ -4,6 +4,7 @@ import com.dmdev.converter.BirthDayConverter;
 import com.dmdev.entity.*;
 import com.dmdev.type.JsonType;
 import com.dmdev.util.HibernateUtil;
+import com.dmdev.util.TestDataImporter;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -21,22 +22,18 @@ public class HibernateRunner {
 
     public static void main(String[] args) {
 
-        Company company = Company.builder().
-                name("Google")
-                .build();
+        try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory();
+        Session session = sessionFactory.openSession()) {
 
-        User user = null;
+//            TestDataImporter.importData(sessionFactory);
 
-        try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory()) {
-            Session session1 = sessionFactory.openSession();
-            try (session1) {
-                Transaction transaction = session1.beginTransaction();
+            session.beginTransaction();
 
-                session1.save(company);
-                session1.save(user);
+            User user = session.get(User.class, 1L);
+            System.out.println(user.getPayments());
+            System.out.println(user.getCompany());
 
-                session1.getTransaction().commit();
-            }
+            session.getTransaction().commit();
         }
     }
 }
