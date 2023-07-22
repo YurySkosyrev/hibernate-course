@@ -2401,8 +2401,43 @@ Fetch добавляет колонки из таблиц в результир�
 
 В случае работы с одной единственной сущностью, если везде стоят Lazy, то при запросе по id, всё равно будет делать дополнительные запросы. Поэтому Hibernate предоставляет другие средства, чтобы сразу инициализировать коллекции сущностей, либо нет.
 
+@FetchProfile
 
+Ключевое слово fetch работает только в HQL, CreteriaAPI, QueryDSL запросах.
 
+В получении сущности по id оно не работает.
+```Java
+User user = session.get(User.class, 1L);
+```
+
+Поэтому Hibernate предлагает аннотацию @FetchProfile
+
+```Java
+@FetchProfile(name = "withCompanyAndPayment", fetchOverrides = {
+        @FetchProfile.FetchOverride(
+                entity = User.class,
+                association = "company",
+                mode = FetchMode.JOIN
+        ),
+        @FetchProfile.FetchOverride(
+                entity = User.class,
+                association = "payments",
+                mode = FetchMode.JOIN
+        )
+})
+public class User implements Comparable<User>, BaseEntity<Long> {
+...
+}
+```
+FetchMode так же бывает SELECT, JOIN, SUBSELECT.
+При использовании Join так же нельзя воспользоваться агрегатными функциями, т.к. получаем декартово произведение. В нашем случае каждого user на payment.
+
+После открытия сессии необходимо разрешить использование Profile
+
+```Java
+session.beginTransaction();
+            session.enableFetchProfile("withCompanyAndPayment");
+```
 
 
 

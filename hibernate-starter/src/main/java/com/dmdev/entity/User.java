@@ -16,6 +16,18 @@ import java.util.*;
 
 import static com.dmdev.util.StringUtils.SPACE;
 
+@FetchProfile(name = "withCompanyAndPayment", fetchOverrides = {
+        @FetchProfile.FetchOverride(
+                entity = User.class,
+                association = "company",
+                mode = FetchMode.JOIN
+        ),
+        @FetchProfile.FetchOverride(
+                entity = User.class,
+                association = "payments",
+                mode = FetchMode.JOIN
+        )
+})
 @NamedQuery(name = "findUserByName", query = "select u from User u " +
         "left join u.company c " +
         "where u.personalInfo.firstname = :firstname and c.name = :companyName " +
