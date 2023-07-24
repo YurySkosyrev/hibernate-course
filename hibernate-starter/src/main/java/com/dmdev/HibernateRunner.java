@@ -6,6 +6,7 @@ import com.dmdev.type.JsonType;
 import com.dmdev.util.HibernateUtil;
 import com.dmdev.util.TestDataImporter;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import org.hibernate.LockMode;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -33,11 +34,15 @@ public class HibernateRunner {
         try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory();
         Session session = sessionFactory.openSession()) {
 
-//            session.beginTransaction();
+//            TestDataImporter.importData(sessionFactory);
 
-            session.doWork(connection -> System.out.println(connection.getTransactionIsolation()));
+            session.beginTransaction();
 
-//            session.getTransaction().commit();
+            Payment payment = session.get(Payment.class, 1L, LockMode.OPTIMISTIC);
+            payment.setAmount(payment.getAmount() + 10);
+
+
+            session.getTransaction().commit();
         }
     }
 }
