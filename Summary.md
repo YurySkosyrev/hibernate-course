@@ -2554,5 +2554,26 @@ public class Payment implements BaseEntity<Long> {
 OptimisticLockType.VERSION - у каждой строки будет поле version, которое будет изменяться при изменении в строке.
 0, 1, 2 ...
 
+LockMode.OPTIMISTIC_FORCE_INCREMENT в отличии от LockMode.OPTIMISTIC всегда инкрементирует version, независимо от того изменился ли amount.
+
+```Sql
+-- Предыдущая version инкрементируется, и если в процессе транзакции, 
+-- кто-то другой изменил запись
+-- то update вернет 0 (число обновленных строк) и возникнет OptimisticLockException
+-- решается проблема last commit wins, преобразуя её в first commit wins.
+
+
+ update
+        payment 
+    set
+        amount=?,
+        receiver_id=?,
+        version=? 
+    where
+        id=? 
+        and version=?
+```
+
+
 
 

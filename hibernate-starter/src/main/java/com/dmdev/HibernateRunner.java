@@ -38,7 +38,7 @@ public class HibernateRunner {
 
             session.beginTransaction();
 
-            Payment payment = session.get(Payment.class, 1L, LockMode.OPTIMISTIC);
+            Payment payment = session.get(Payment.class, 1L, LockMode.OPTIMISTIC_FORCE_INCREMENT);
             payment.setAmount(payment.getAmount() + 10);
 
 
