@@ -16,6 +16,13 @@ import java.util.*;
 
 import static com.dmdev.util.StringUtils.SPACE;
 
+@NamedEntityGraph(
+        name = "withCompanyAndChat",
+        attributeNodes = {
+                @NamedAttributeNode("company"),
+                @NamedAttributeNode(value = "userChats", subgraph = "chats")
+        },
+        subgraphs = {@NamedSubgraph(name = "chats", attributeNodes = @NamedAttributeNode("chat"))})
 @FetchProfile(name = "withCompanyAndPayment", fetchOverrides = {
         @FetchProfile.FetchOverride(
                 entity = User.class,

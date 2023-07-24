@@ -2439,6 +2439,77 @@ session.beginTransaction();
             session.enableFetchProfile("withCompanyAndPayment");
 ```
 
+## Entity Graph
+
+@Fetch Profile работает в том случае, когда мы хотим получить сущность по идентификатору. В случае HQL запросов приходится использовать ключевое слово fetch.
+
+EntityGraph работает для всех случаев. Помимо самих связных сущностей (графов), можно доставить и дальнейшие связные сущности по цепочке (субграфы)
+
+```Java
+@NamedEntityGraph(
+        name = "withCompanyAndChat",
+        attributeNodes = {
+                @NamedAttributeNode("company"),
+                @NamedAttributeNode(value = "userChats", subgraph = "chats")
+        },
+        subgraphs = {@NamedSubgraph(name = "chats", attributeNodes = @NamedAttributeNode("chat"))})
+public class User implements Comparable<User>, BaseEntity<Long> {
+    ...
+}
+```
+
+```Java
+// Company и UserChats будут в одном select сразу.
+Map<String, Object> properties = Map.of(
+                    GraphSemantic.LOAD.getJpaHintName(), session.getEntityGraph("withCompanyAndChat")
+            );
+
+            User user = session.find(User.class, 1L, properties);
+            System.out.println(user.getCompany());
+            System.out.println(user.getUserChats().size());
+```
+
+```Java
+// Тоже самое для сессии
+   List<User> users = session.createQuery(
+                    "select u from User u join u.payments where 1 = 1", User.class)
+                    .setHint(GraphSemantic.LOAD.getJpaHintName(), session.getEntityGraph("withCompanyAndChat"))
+                    .list();
+            users.forEach(it -> System.out.println(it.getUserChats().size()));
+            users.forEach(it -> System.out.println(it.getCompany().getName()));
+```
+
+GraphSemantic.LOAD - FetchType.LAZY и FetchType.EAGER в сущностях остаются как были установлены.
+
+GraphSemantic.FETCH все FetchType становятся LAZY и можно с помощью EntityGraph управлять, что нужно загружать.
+
+Есть так же возможность программной установки EntityGraph.
+
+```Java
+  RootGraph<User> graph = session.createEntityGraph(User.class);
+            graph.addAttributeNodes("company", "userChats");
+            SubGraph<UserChat> subGraph = graph.addSubgraph("userChats", UserChat.class);
+            subGraph.addAttributeNodes("chat");
+
+ List<User> users = session.createQuery(
+                    "select u from User u join u.payments where 1 = 1", User.class)
+//                    .setHint(GraphSemantic.LOAD.getJpaHintName(), session.getEntityGraph("withCompanyAndChat"))
+                    .setHint(GraphSemantic.LOAD.getJpaHintName(), graph)
+                    .list();
+            users.forEach(it -> System.out.println(it.getUserChats().size()));
+            users.forEach(it -> System.out.println(it.getCompany().getName()));
+
+```
+
+## N + 1 Best Practice
+
+1. Избегать @OneOnOne bidirectional если ключ связной таблицы синтетический. (если нет используем Lazy и optional = false)
+2. Использовать везде FetchType Lazy. Eager срабатывает только при получении сущности по id, в query для каждой сущности будет выполнен запрос для получения каждой eager ассоциации, что даст декартово произведение без возможности использования агрегирующих функций.
+3. Не следует использовать @BatchSize и @Fetch. Подходит для одного случая, а не для общего случая всех бизнес-кейсов
+4. Использовать ключевое слово fetch (HQL, Criteria API, Querydsl). Но его нет в получении по id
+5. Использовать EntityGraph API, вместо @FetchProfile. Можно выносить создание графа в отельный утилитный класс.
+
+
 
 
 
