@@ -2574,6 +2574,87 @@ LockMode.OPTIMISTIC_FORCE_INCREMENT в отличии от LockMode.OPTIMISTIC �
         and version=?
 ```
 
+OptimisticLockType.ALL - при update проверяет в where не только поле version, а все поля конкретной строчки. Так же необходимо добавить аннотацию @DynamicUpdate.
+
+В Hibernate определяет sql-запросы динамически на основании аннотаций. sql-операции распарсиваются и кэшируются один раз, поэтому необходимо указывать аннотацию @DynamicUpdate обозначая, что мы будем динамически менять update, добавляя в where все поля.
+
+```Java
+@OptimisticLocking(type = OptimisticLockType.ALL)
+@DynamicUpdate
+public class Payment implements BaseEntity<Long> {
+    ...
+}
+```
+
+OptimisticLockType.DIRTY - в where добавляются только изменяемы поля.
+
+## Pessimistic lock.
+
+Pessimistic lock - блокировки на уровне БД. Уровень изолированности БД не поднимается, чтобы не снижать производительность приложения. Блокируются конкретные строки или таблицы в целом.
+
+### LockMode.PESSIMISTIC_READ
+
+```Java
+    public static void main(String[] args) {
+
+        try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory();
+             Session session = sessionFactory.openSession();
+             Session session1 = sessionFactory.openSession();) {
+
+//            TestDataImporter.importData(sessionFactory);
+
+            session.beginTransaction();
+            session1.beginTransaction();
+
+            Payment payment = session.get(Payment.class, 1L, LockMode.PESSIMISTIC_READ);
+            payment.setAmount(payment.getAmount() + 10);
+
+            Payment payment1 = session1.get(Payment.class, 1L);
+            payment1.setAmount(payment.getAmount() + 20);
+
+            session1.getTransaction().commit();
+            session.getTransaction().commit();
+        }
+    }
+}
+
+```
+В данном случае session блокирует запись с id = 1l с ключевым словом for share, и session1 повиснет до коммита session. Что бы не висеть вечно нужно ставить timeout.
+
+for share блокирует update, delete и другие (см. документацию). select не блокируется.
+
+```Sql
+ select
+        payment0_.id as id1_4_0_,
+        payment0_.amount as amount2_4_0_,
+        payment0_.receiver_id as receiver3_4_0_ 
+    from
+        payment payment0_ 
+    where
+        payment0_.id=? for share
+```
+
+### LockMode.PESSIMISTIC_WRITE
+
+Блокирует for update. Более строгий чем for share. Select также не блокирует.
+
+### LockMode.PESSIMISTIC_FORCE_INCREMENT
+
+Нужно вернуть в сущность поле version. При update проверяется версионность. Данный мод может пригодится, если нужно проверять версионность, потому что for update заблокирует update.
+
+```Java
+   session.createQuery("select p from Payment p", Payment.class)
+                    .setLockMode(LockModeType.PESSIMISTIC_FORCE_INCREMENT)
+                    .setHint("javax.persistence.lock.timeout", 5000)
+                    .list();
+```
+
+Так можно заблокировать все записи, но для каждой будет вызван select и update for share, что отрицательно скажется на производительности.
+
+В метод find так же можно передавать properties (hints) с timeout.
+Можно вызывать session.get с параметром LockOptions, который включается в себя timeout.
+
+Таким образом мы не повышаем уровень изолированности БД, а используем оптимистические или пессимистические блокировки для строк.
 
 
 

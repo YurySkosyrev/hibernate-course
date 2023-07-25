@@ -19,6 +19,7 @@ import org.hibernate.jdbc.Work;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.persistence.LockModeType;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -32,16 +33,26 @@ public class HibernateRunner {
     public static void main(String[] args) {
 
         try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory();
-        Session session = sessionFactory.openSession()) {
+             Session session = sessionFactory.openSession();
+             Session session1 = sessionFactory.openSession();) {
 
 //            TestDataImporter.importData(sessionFactory);
 
             session.beginTransaction();
+            session1.beginTransaction();
 
-            Payment payment = session.get(Payment.class, 1L, LockMode.OPTIMISTIC_FORCE_INCREMENT);
+            session.createQuery("select p from Payment p", Payment.class)
+                    .setLockMode(LockModeType.PESSIMISTIC_FORCE_INCREMENT)
+                    .setHint("javax.persistence.lock.timeout", 5000)
+                    .list();
+
+            Payment payment = session.get(Payment.class, 1L, LockMode.PESSIMISTIC_READ);
             payment.setAmount(payment.getAmount() + 10);
 
+            Payment payment1 = session1.get(Payment.class, 1L);
+            payment1.setAmount(payment.getAmount() + 20);
 
+            session1.getTransaction().commit();
             session.getTransaction().commit();
         }
     }
