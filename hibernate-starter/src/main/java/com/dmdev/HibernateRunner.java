@@ -16,6 +16,7 @@ import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.SubGraph;
 import org.hibernate.jdbc.Work;
+import org.hibernate.jpa.QueryHints;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,20 +40,18 @@ public class HibernateRunner {
 //            TestDataImporter.importData(sessionFactory);
 
             session.beginTransaction();
-            session1.beginTransaction();
 
-            session.createQuery("select p from Payment p", Payment.class)
-                    .setLockMode(LockModeType.PESSIMISTIC_FORCE_INCREMENT)
-                    .setHint("javax.persistence.lock.timeout", 5000)
+            session.createNativeQuery("SET TRANSACTION READ ONLY ;").executeUpdate();
+            List<Payment> payments = session.createQuery("select p from Payment p", Payment.class)
+//                    .setLockMode(LockModeType.PESSIMISTIC_FORCE_INCREMENT)
+//                    .setHint("javax.persistence.lock.timeout", 5000)
+                    .setReadOnly(true)
+                    .setHint(QueryHints.HINT_READONLY, true)
                     .list();
 
             Payment payment = session.get(Payment.class, 1L, LockMode.PESSIMISTIC_READ);
             payment.setAmount(payment.getAmount() + 10);
 
-            Payment payment1 = session1.get(Payment.class, 1L);
-            payment1.setAmount(payment.getAmount() + 20);
-
-            session1.getTransaction().commit();
             session.getTransaction().commit();
         }
     }
