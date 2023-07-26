@@ -2893,10 +2893,62 @@ public class HibernateUtil {
     }
 ```
 
+## Interceptors
 
+Есть один главный интерфейс Interceptor, который содержит множество методов на все случаи жизни. При использовании Interceptor необходимо реализовать все эти методы. Поэтому создали свой EmptyInterceptor. От него и нужно наследоваться.
 
+Создаём свой Interceptor
 
+```Java
+public class GlobalInterceptor extends EmptyInterceptor {
 
+    @Override
+    public boolean onFlushDirty(Object entity, Serializable id, Object[] currentState, Object[] previousState, String[] propertyNames, Type[] types) {
+        return super.onFlushDirty(entity, id, currentState, previousState, propertyNames, types);
+    }
+}
+```
+
+И подключаем его в конфигурацию
+
+```Java
+@UtilityClass
+public class HibernateUtil {
+
+    public static Configuration buildConfiguration() {
+        Configuration configuration = new Configuration();
+      
+      ...
+
+        configuration.setInterceptor(new GlobalInterceptor());
+        configuration.configure();
+        return configuration;
+    }
+}
+
+```
+
+В некоторых случаях можно добавлять свой Interceptor для конкретной сессии
+
+```Java
+public class HibernateRunner {
+
+    public static void main(String[] args) {
+
+        try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory();
+             Session session = sessionFactory
+                     .withOptions()
+                     .interceptor(new GlobalInterceptor())
+                     .openSession()) {
+
+         ...
+        }
+    }
+}
+
+```
+
+Interceptor может быть либо один, либо ни одного.
 
 
 

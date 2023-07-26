@@ -3,6 +3,7 @@ package com.dmdev.util;
 import com.dmdev.converter.BirthDayConverter;
 import com.dmdev.entity.Audit;
 import com.dmdev.entity.User;
+import com.dmdev.interceptor.GlobalInterceptor;
 import com.dmdev.listener.AuditTableListener;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.experimental.UtilityClass;
@@ -54,6 +55,7 @@ public class HibernateUtil {
         configuration.setPhysicalNamingStrategy(new CamelCaseToUnderscoresNamingStrategy());
         configuration.addAttributeConverter(new BirthDayConverter());
         configuration.registerTypeOverride(new JsonBinaryType());
+        configuration.setInterceptor(new GlobalInterceptor());
         configuration.configure();
         return configuration;
     }

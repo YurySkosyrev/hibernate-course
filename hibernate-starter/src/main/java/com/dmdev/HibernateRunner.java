@@ -2,6 +2,7 @@ package com.dmdev;
 
 import com.dmdev.converter.BirthDayConverter;
 import com.dmdev.entity.*;
+import com.dmdev.interceptor.GlobalInterceptor;
 import com.dmdev.type.JsonType;
 import com.dmdev.util.HibernateUtil;
 import com.dmdev.util.TestDataImporter;
@@ -34,7 +35,10 @@ public class HibernateRunner {
     public static void main(String[] args) {
 
         try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory();
-             Session session = sessionFactory.openSession()) {
+             Session session = sessionFactory
+                     .withOptions()
+                     .interceptor(new GlobalInterceptor())
+                     .openSession()) {
 
             TestDataImporter.importData(sessionFactory);
 
