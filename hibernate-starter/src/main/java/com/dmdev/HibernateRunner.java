@@ -34,22 +34,13 @@ public class HibernateRunner {
     public static void main(String[] args) {
 
         try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory();
-             Session session = sessionFactory.openSession();
-             Session session1 = sessionFactory.openSession();) {
+             Session session = sessionFactory.openSession()) {
 
 //            TestDataImporter.importData(sessionFactory);
 
             session.beginTransaction();
 
-            session.createNativeQuery("SET TRANSACTION READ ONLY ;").executeUpdate();
-            List<Payment> payments = session.createQuery("select p from Payment p", Payment.class)
-//                    .setLockMode(LockModeType.PESSIMISTIC_FORCE_INCREMENT)
-//                    .setHint("javax.persistence.lock.timeout", 5000)
-                    .setReadOnly(true)
-                    .setHint(QueryHints.HINT_READONLY, true)
-                    .list();
-
-            Payment payment = session.get(Payment.class, 1L, LockMode.PESSIMISTIC_READ);
+            Payment payment = session.get(Payment.class, 1L);
             payment.setAmount(payment.getAmount() + 10);
 
             session.getTransaction().commit();

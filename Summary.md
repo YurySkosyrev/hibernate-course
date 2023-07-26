@@ -835,7 +835,7 @@ public class Company {
     private Company company;
 ```
 
-Для работы с ManyToOne есть специальный BasicType - ManyToOneType. Этот тип когда видит соответствующую аннотацию занимается формированием запросов в БД.
+Для работы с ManyToOne есть специальный BasicType - ManyToOneType. Данный метод содержит enum тип ков, котоыреогда вит соответствующую аннотацию занимается формированием запросов в БД.
 
 ## Fetch types
 
@@ -2696,6 +2696,56 @@ Hibernate поддерживает работу с БД без явного от
 Обновить данные не получится, будет exception no transaction in progress. Удаление так же не сработает в любом случае.
 
 Такой режим допускается использовать для небольшого количества операций чтения, потому что они происходят вне транзакции. Для каждой операции будет автоматически открыто соединение, что плохо в плане производительности.
+
+## Entity Callback
+
+Для работы с жизненным циклом сущностей и перехвата существует интерфейс @Callback.
+
+У него есть два метода
+
+getCallbackType() - какие события можем перехватить. Pre/Post Update, Persist, Remove и Post Load.
+
+Данный метод содержит enum классов, котоыре extend аннотации, следовательно можем использовать в двух местах:
+
+- над сущностями
+- в Listners
+
+Можно размещать Callback прямо в классе сущности, но это не очень хорошая практика.
+
+```Java
+public class Payment extends AuditableEntity<Long> {
+
+...
+
+    @PrePersist
+    public void prePersist() {
+        setCreatedAt(Instant.now());
+//        setCreatedBy(SecurityContext.getUser());
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        setUpdatedAt(Instant.now());
+//        setUpdatedBy(SecurityContext.getUser());
+    }
+}
+```
+
+При запуске создаётся объект со всеми Callback для всех классов и у них вызывается метод PerformCallback.
+
+```Java
+final class CallbackRegistryImpl implements CallbackRegistryImplementor {
+	private HashMap<Class, Callback[]> preCreates = new HashMap<Class, Callback[]>();
+	private HashMap<Class, Callback[]> postCreates = new HashMap<Class, Callback[]>();
+	private HashMap<Class, Callback[]> preRemoves = new HashMap<Class, Callback[]>();
+	private HashMap<Class, Callback[]> postRemoves = new HashMap<Class, Callback[]>();
+	private HashMap<Class, Callback[]> preUpdates = new HashMap<Class, Callback[]>();
+	private HashMap<Class, Callback[]> postUpdates = new HashMap<Class, Callback[]>();
+	private HashMap<Class, Callback[]> postLoads = new HashMap<Class, Callback[]>();
+}
+```
+
+
 
 
 

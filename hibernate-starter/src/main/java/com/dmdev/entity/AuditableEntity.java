@@ -12,7 +12,9 @@ import java.time.Instant;
 @Setter
 public abstract class AuditableEntity <T extends Serializable> implements BaseEntity<T>{
 
-    private Instant created_at;
+    private Instant createdAt;
+    private String createdBy;
 
-    private String created_by;
+    private Instant updatedAt;
+    private String updatedBy;
 }
