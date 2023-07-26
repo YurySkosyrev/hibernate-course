@@ -1,6 +1,6 @@
 package com.dmdev.entity;
 
-import com.dmdev.listener.AuditListener;
+import com.dmdev.listener.AuditDatesListener;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,7 +13,7 @@ import javax.persistence.*;
 @AllArgsConstructor
 @Builder
 @Entity
-@EntityListeners(AuditListener.class)
+@EntityListeners(AuditDatesListener.class)
 //@OptimisticLocking(type = OptimisticLockType.ALL)
 //@DynamicUpdate
 public class Payment extends AuditableEntity<Long> {

@@ -2812,7 +2812,86 @@ public class UserChat extends AuditableEntity<Long> {
 
 При этом нужно быть осторожным, если изменять колличество пользователей через sql запросы, можно нарушить целостность данных. Но такой подход позволяет выиграть по производительности.
 
+## Event Listeners
 
+В Hibernate есть набор Events - объектов с полями и Listeners, которые слушают соответствующие события.
+
+Мы создаём свои Listeners, наследуясь от соотвествующего интерфейса EventListners Hibernate и добавляемся в группу. По сути это функциональные интерфейсы, состоящие из одного метода, вызываемого при срабатывании Listnerа.
+
+![alt text](img/Listeners.jpg "jdbc-structure")
+
+В Hibernate даже сохранение сущностей и другие операции с ними сделаны через Listners.
+
+Создаём свой Listener
+```Java
+public class AuditTableListener implements PreDeleteEventListener, PreInsertEventListener {
+    @Override
+    public boolean onPreDelete(PreDeleteEvent event) {
+
+        auditEntity(event, Audit.Operation.DELETE);
+
+        return false;
+    }
+
+    @Override
+    public boolean onPreInsert(PreInsertEvent event) {
+
+        auditEntity(event, Audit.Operation.DELETE);
+
+        return false;
+    }
+
+    public void auditEntity(AbstractPreDatabaseOperationEvent event, Audit.Operation operation) {
+
+        if (event.getEntity().getClass() != Audit.class) {
+
+            Audit audit = Audit.builder()
+                    .entityId(event.getId())
+                    .entityName(event.getEntityName())
+                    .entityContent(event.getEntity().toString())
+                    .operation(operation)
+                    .build();
+
+            event.getSession().save(audit);
+        }
+    }
+}
+
+```
+
+Регистрируем его в Hibernate
+```Java
+
+@UtilityClass
+public class HibernateUtil {
+
+        configuration.addAnnotatedClass(Audit.class);
+
+}
+```
+
+Добавляем Listners в группы
+```Java
+    private static void registerListeners(SessionFactory sessionFactory) {
+        // у SessionFactory нет функционала для добавления EventListener, поэтому мы должны его
+        // явно привести к его реализации SessionFactoryImpl с помощью метода unwrap
+        // метод unwrap делает явное приведение типов (type cast)
+        SessionFactoryImpl sessionFactoryImpl = sessionFactory.unwrap(SessionFactoryImpl.class);
+
+        // вызываем getServiceRegistry
+        // ServiceRegistry - объект, которые занимается регистрацией различных сервисов
+        // сервис реализует интерфейс Service. Service в Hibernate может быть всё, что угодно
+        // диалекты, listeners, java transaction API и т.д.
+        EventListenerRegistry listenerRegistry = sessionFactoryImpl.getServiceRegistry().getService(EventListenerRegistry.class);
+        AuditTableListener auditTableListener = new AuditTableListener();
+
+        // добавляем Listeners в группы
+        // можно добавлять в конец или начала или вообще переопределить
+        // тип EventType должен совпадать с типом EventListener
+        listenerRegistry.appendListeners(EventType.PRE_INSERT, auditTableListener);
+        listenerRegistry.appendListeners(EventType.PRE_DELETE, auditTableListener);
+    }
+```
 
 
 
