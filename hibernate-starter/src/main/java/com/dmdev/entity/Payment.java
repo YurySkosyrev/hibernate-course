@@ -1,21 +1,19 @@
 package com.dmdev.entity;
 
+import com.dmdev.listener.AuditListener;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.DynamicUpdate;
-import org.hibernate.annotations.OptimisticLockType;
-import org.hibernate.annotations.OptimisticLocking;
 
 import javax.persistence.*;
-import java.time.Instant;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Entity
+@EntityListeners(AuditListener.class)
 //@OptimisticLocking(type = OptimisticLockType.ALL)
 //@DynamicUpdate
 public class Payment extends AuditableEntity<Long> {
@@ -34,15 +32,4 @@ public class Payment extends AuditableEntity<Long> {
     @JoinColumn(name = "receiver_id")
     private User receiver;
 
-    @PrePersist
-    public void prePersist() {
-        setCreatedAt(Instant.now());
-//        setCreatedBy(SecurityContext.getUser());
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        setUpdatedAt(Instant.now());
-//        setUpdatedBy(SecurityContext.getUser());
-    }
 }

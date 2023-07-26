@@ -2710,7 +2710,7 @@ getCallbackType() - какие события можем перехватить.
 - над сущностями
 - в Listners
 
-Можно размещать Callback прямо в классе сущности, но это не очень хорошая практика.
+Можно размещать Callback прямо в классе сущности - EntityCallback.
 
 ```Java
 public class Payment extends AuditableEntity<Long> {
@@ -2744,6 +2744,76 @@ final class CallbackRegistryImpl implements CallbackRegistryImplementor {
 	private HashMap<Class, Callback[]> postLoads = new HashMap<Class, Callback[]>();
 }
 ```
+
+Логичнее перенести все методы сразу в класс AuditableEntity<Long>. Но всё равно хранить этот функционал в сущностях не очень хорошо, нужнго выносить в отдельный класс - Listners
+
+## Listeners
+
+```Java
+public class AuditListener {
+
+    @PrePersist
+    public void prePersist(AuditableEntity<?> object) {
+        object.setCreatedAt(Instant.now());
+//        setCreatedBy(SecurityContext.getUser());
+    }
+
+    @PreUpdate
+    public void preUpdate(AuditableEntity<?> object) {
+        object.setUpdatedAt(Instant.now());
+//        setUpdatedBy(SecurityContext.getUser());
+    }
+
+}
+```
+AuditableEntity<?> можем использовать так как будем размещать эти аннотации над классом, который является наследником AuditableEntity<?>.
+
+Есть ограничение, что можно создавать по одному методу на каждый Callback (@PrePersist и.т.д.).
+
+Если нужны ещё методы, то нужно создавать новый Listener. Можно создавать сколько угодно Listener, главное чтобы в каждом был хотя бы один Callback.
+
+Чтобы добавить Listener в конфигурацию Hibernate нужно добавить его с помощью специальной аннотации над классом.
+
+При работе создаётся класс ListnerCallback, который хранит Callback метод  и Bean объекта Listener, у которого будем вызвать Callback метод. Это достигается с помощью Reflection API.
+
+Кроме аудита Listener могут решать проблему денормализации БД. Например можно хранить в сущности чат колличество участников, чтобы не делать каждый раз запрос в другие таблицы.
+
+```Java
+
+public class Chat {
+
+    @Builder.Default
+    private Integer count = 0;
+
+}
+
+
+public class UserChatListener {
+
+    @PostPersist
+    public void postPersist(UserChat userChat) {
+        Chat chat = userChat.getChat();
+        chat.setCount(chat.getCount() + 1);
+    }
+
+    @PostRemove
+    public void postRemove(UserChat userChat) {
+        Chat chat = userChat.getChat();
+        chat.setCount(chat.getCount() - 1);
+    }
+
+}
+
+@EntityListeners(UserChatListener.class)
+public class UserChat extends AuditableEntity<Long> {
+    ...
+}
+```
+
+При этом нужно быть осторожным, если изменять колличество пользователей через sql запросы, можно нарушить целостность данных. Но такой подход позволяет выиграть по производительности.
+
+
+
 
 
 
