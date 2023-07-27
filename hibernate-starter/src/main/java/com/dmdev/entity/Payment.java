@@ -1,10 +1,10 @@
 package com.dmdev.entity;
 
 import com.dmdev.listener.AuditDatesListener;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
+import org.hibernate.envers.RelationTargetAuditMode;
 
 import javax.persistence.*;
 
@@ -14,8 +14,11 @@ import javax.persistence.*;
 @Builder
 @Entity
 @EntityListeners(AuditDatesListener.class)
+@EqualsAndHashCode(callSuper=false)
 //@OptimisticLocking(type = OptimisticLockType.ALL)
 //@DynamicUpdate
+//@Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
+@Audited
 public class Payment extends AuditableEntity<Long> {
 
     @Id
@@ -28,6 +31,7 @@ public class Payment extends AuditableEntity<Long> {
     @Column(nullable = false)
     private Integer amount;
 
+//    @NotAudited
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "receiver_id")
     private User receiver;

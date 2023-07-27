@@ -8,7 +8,8 @@ import java.sql.Date;
 import java.util.Optional;
 
 @Converter(autoApply = true)
-public class BirthDayConverter implements AttributeConverter<Birthday, Date> {
+public class BirthdayConverter implements AttributeConverter<Birthday, Date> {
+
     @Override
     public Date convertToDatabaseColumn(Birthday attribute) {
         return Optional.ofNullable(attribute)

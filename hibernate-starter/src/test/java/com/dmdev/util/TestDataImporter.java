@@ -86,6 +86,7 @@ public class TestDataImporter {
                 .receiver(user)
                 .amount(amount)
                 .build();
+        System.out.println(payment);
         session.save(payment);
     }
 }

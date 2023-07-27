@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'com.ewerk.gradle.plugins.querydsl' version '1.0.10'
+    id "com.ewerk.gradle.plugins.querydsl" version "1.0.10"
 }
 
 group 'org.example'
@@ -10,17 +10,17 @@ repositories {
     mavenCentral()
 }
 
-sourceSets{
+sourceSets {
     main {
         java {
-            srcDirs += "$buildDir/generated/sources/anotationProcessor/java/main"
+            srcDirs += "$buildDir/generated/sources/annotationProcessor/java/main"
         }
     }
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_16
+    targetCompatibility = JavaVersion.VERSION_16
 }
 
 configurations {
@@ -30,38 +30,40 @@ configurations {
 dependencies {
 
     implementation 'org.hibernate:hibernate-core:5.5.7.Final'
-    runtimeOnly 'org.postgresql:postgresql:42.6.0'
+    implementation 'org.hibernate:hibernate-envers:5.5.7.Final'
+    runtimeOnly 'org.postgresql:postgresql:42.2.24.jre7'
     implementation 'com.vladmihalcea:hibernate-types-52:2.12.1'
     implementation 'org.slf4j:slf4j-log4j12:1.7.32'
 
-//    annotationProcessor('org.hibernate:hibernate-jpamodelgen:5.5.7.Final')
+//    annotationProcessor 'org.hibernate:hibernate-jpamodelgen:5.5.7.Final'
 
     implementation 'javax.annotation:javax.annotation-api:1.3.2'
     implementation 'com.querydsl:querydsl-jpa:5.0.0'
     annotationProcessor 'com.querydsl:querydsl-apt:5.0.0'
 
-    compileOnly 'org.projectlombok:lombok:1.18.26'
-    annotationProcessor 'org.projectlombok:lombok:1.18.26'
+    compileOnly 'org.projectlombok:lombok:1.18.20'
+    annotationProcessor 'org.projectlombok:lombok:1.18.20'
 
-    testCompileOnly 'org.projectlombok:lombok:1.18.26'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.26'
+    testCompileOnly 'org.projectlombok:lombok:1.18.20'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.20'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
     testImplementation 'org.assertj:assertj-core:3.21.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
 //    testImplementation 'com.h2database:h2:1.4.200'
+    // https://mvnrepository.com/artifact/org.testcontainers/postgresql
     testImplementation 'org.testcontainers:postgresql:1.16.0'
-
-
 }
 
-querydsl{
-    jpa = true;
-    querydslSourcesDir = "$buildDir/generated/sources/anotationProcessor/java/main"
+querydsl {
+    jpa = true
+    querydslSourcesDir = "$buildDir/generated/sources/annotationProcessor/java/main"
 }
 
 compileQuerydsl {
+//    enabled = false
     options.annotationProcessorPath = configurations.querydsl
 }
+compileQuerydsl.dependsOn(clean)
 
 test {
     useJUnitPlatform()

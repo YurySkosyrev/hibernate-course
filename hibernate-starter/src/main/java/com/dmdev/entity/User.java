@@ -3,8 +3,11 @@ package com.dmdev.entity;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import org.hibernate.annotations.*;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
 
 import javax.persistence.*;
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
@@ -17,22 +20,21 @@ import java.util.*;
 import static com.dmdev.util.StringUtils.SPACE;
 
 @NamedEntityGraph(
-        name = "withCompanyAndChat",
+        name = "WithCompanyAndChat",
         attributeNodes = {
                 @NamedAttributeNode("company"),
                 @NamedAttributeNode(value = "userChats", subgraph = "chats")
         },
-        subgraphs = {@NamedSubgraph(name = "chats", attributeNodes = @NamedAttributeNode("chat"))})
+        subgraphs = {
+                @NamedSubgraph(name = "chats", attributeNodes = @NamedAttributeNode("chat"))
+        }
+)
 @FetchProfile(name = "withCompanyAndPayment", fetchOverrides = {
         @FetchProfile.FetchOverride(
-                entity = User.class,
-                association = "company",
-                mode = FetchMode.JOIN
+                entity = User.class, association = "company", mode = FetchMode.JOIN
         ),
         @FetchProfile.FetchOverride(
-                entity = User.class,
-                association = "payments",
-                mode = FetchMode.JOIN
+                entity = User.class, association = "payments", mode = FetchMode.JOIN
         )
 })
 @NamedQuery(name = "findUserByName", query = "select u from User u " +
@@ -48,6 +50,7 @@ import static com.dmdev.util.StringUtils.SPACE;
 @Entity
 @Table(name = "users", schema = "public")
 @TypeDef(name = "dmdev", typeClass = JsonBinaryType.class)
+@Audited
 public class User implements Comparable<User>, BaseEntity<Long> {
 
     @Id
@@ -66,7 +69,7 @@ public class User implements Comparable<User>, BaseEntity<Long> {
     @Enumerated(EnumType.STRING)
     private Role role;
 
-
+//
 //    @OneToOne(
 //            mappedBy = "user",
 //            cascade = CascadeType.ALL,
@@ -78,10 +81,12 @@ public class User implements Comparable<User>, BaseEntity<Long> {
     @JoinColumn(name = "company_id") // company_id
     private Company company;
 
+    @NotAudited
     @Builder.Default
     @OneToMany(mappedBy = "user")
-    private Set<UserChat> userChats = new HashSet<>();
+    private List<UserChat> userChats = new ArrayList<>();
 
+    @NotAudited
     @Builder.Default
 //    @BatchSize(size = 3)
 //    @Fetch(FetchMode.SUBSELECT)

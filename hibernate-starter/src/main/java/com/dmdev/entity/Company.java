@@ -2,6 +2,7 @@ package com.dmdev.entity;
 
 import lombok.*;
 import org.hibernate.annotations.SortNatural;
+import org.hibernate.envers.Audited;
 
 import javax.persistence.*;
 import java.util.*;
@@ -13,6 +14,7 @@ import java.util.*;
 @ToString(exclude = "users")
 @Builder
 @Entity
+@Audited
 public class Company {
 
     @Id
