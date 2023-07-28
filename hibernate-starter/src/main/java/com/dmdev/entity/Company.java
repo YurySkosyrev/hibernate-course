@@ -1,11 +1,12 @@
 package com.dmdev.entity;
 
 import lombok.*;
-import org.hibernate.annotations.SortNatural;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.envers.Audited;
-
+import org.hibernate.annotations.Cache;
 import javax.persistence.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -15,6 +16,7 @@ import java.util.*;
 @Builder
 @Entity
 @Audited
+@Cache(usage = CacheConcurrencyStrategy.READ_ONLY, region = "Company")
 public class Company {
 
     @Id

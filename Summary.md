@@ -3101,10 +3101,124 @@ Hibernate предоставляет интерфейс RegionFactoryTemplate д
 
 Появляется реализация JCacheRegionFactory интерфейса RegionFactoryTemplate.
 
-Так же в файле конфигурации необходимо разрешить использование кэша второго уровня и установить класс для работы с провайдером кэша.
+Так же в файле конфигурации необходимо разрешить использование кэша второго уровня и установить класс используемого провайдера.
 
 ```Java
-
+<property name="hibernate.cache.use_second_level_cache">true</property>
+<property name="hibernate.cache.region.factory_class">org.hibernate.cache.jcache.internal.JCacheRegionFactory</property>
 ```
 
+Чтобы сущность попала в кэш второго уровня необходимо над классом прописать аннотацию 
 
+```Java
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+```
+
+```Java
+public class HibernateRunner {
+
+    @Transactional
+    public static void main(String[] args) throws SQLException {
+        try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory()) {
+//            TestDataImporter.importData(sessionFactory);
+
+            User user = null;
+            try (Session session = sessionFactory.openSession()) {
+                session.beginTransaction();
+
+             user = session.find(User.class, 1L);
+             User user1 = session.find(User.class, 1L); //кэш первого уровня
+
+                session.getTransaction().commit();
+            }
+
+            try (Session session = sessionFactory.openSession()) {
+                session.beginTransaction();
+
+                User user1 = session.find(User.class, 1L); //кэш второго уровня
+
+                session.getTransaction().commit();
+            }
+        }
+    }
+}
+
+```
+Однако при использовании кэша второго уровня создаётся новый объект типа User, т.к. происходит десериализация из кэша второго уровня в новый объект.
+
+Если заходим получить ещё и компанию (Company это ManyToOne Fetch.LAZY)
+
+```Java
+User user1 = session.find(User.class, 1L);
+user1.getCompany().getName();
+```
+
+Будет выполнено обращение в БД, т.к. мы не указали, что нужно кэшировать связную сущность.
+
+![alt text](img/sLvC1.jpg "jdbc-structure")
+
+Чтобы добавить и её в кэш нужно поставить аннотацию @Cache. При этом сущность Company сохранится в кэше со всеми своими полями, а в сущности User будет сохранена ссылка на эту Company.
+
+![alt text](img/sLvC2.jpg "jdbc-structure")
+
+При этом т.к. Fetch.LAZY, то без первого обращения к Company, мы бы не положили её в кэш второго уровня.
+
+Если же мы захотим закэшировать коллекцию, то аннотацию @Cashe нужно ставить и над классом и над полем в главном классе. Например при кэшировании UserChat, в сущности User не будет ссылки на id сущности UserChat. Таким образом создаётся отдельный Region для сущностей сопоставляющих User и UserChat. В этом случае можно будет установить соответствие между User и UserChat.
+
+![alt text](img/sLvC3.jpg "jdbc-structure")
+
+Если забыть поставить аннотацию @Cache над UserChat, то сопоставление будет в кэше, а самих UserChat не будет и придётся делать запрос в БД, при этом будет сделано столько запросов, сколько есть записей в UserChat.
+
+![alt text](img/sLvC4.jpg "jdbc-structure")
+
+А если поставить аннотацию @Cache только над UserChat, то сущности будут в кэше, а сопоставление их нет.
+
+![alt text](img/sLvC5.jpg "jdbc-structure")
+
+## Regions
+
+Regions - области памяти в кэше, где хранятся наши сущности (сериализованные значения) в массиве.
+
+Имя Region по умолчанию создаётся как полный путь к классу. 
+
+Для коллекции имя_главной_сущности.имя_подчиненной
+
+Можно задавать имя вручную
+
+```Java
+@Cache(usage = CacheConcurrencyStrategy.READ_ONLY, region = "Company")
+```
+
+В случае ehcache regions настраивается через xml-фаил
+
+```Java
+<?xml version="1.0" encoding="UTF-8"?>
+<ehcache:config
+        xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+        xmlns:ehcache='http://www.ehcache.org/v3'
+        xsi:schemaLocation="http://www.ehcache.org/v3 http://www.ehcache.org/schema/ehcache-core-3.1.xsd">
+
+    <ehcache:cache alias="Users" uses-template="simple"/>
+    <ehcache:cache alias="Companies" uses-template="simple"/>
+
+    <ehcache:cache-template name="simple">
+        <ehcache:expiry>
+            <ehcache:ttl>10</ehcache:ttl>
+        </ehcache:expiry>
+        <ehcache:heap>1000</ehcache:heap>
+    </ehcache:cache-template>
+
+</ehcache:config>
+```
+
+Так же в файле конфига Hibernate нужно прописать путь к этому файлу.
+
+```Java
+<property name="hibernate.javax.cache.uri">/ehcache-config.xml</property>
+```
+
+Последнее свойство у аннотации @Cache - CacheConcurrencyStrategy, это то как работают транзакции с кэшем. Реализация локов и одновременная работа с сущностью в кэше.
+
+- READ_ONLY - сущность почти никогда не меняется, справочник. Изменять сущность не можем.
+- READ_WRITE - можно не только читать, но и добавлять. При этом на сущность ставится lock и другие транзакции видят его и делают запрос в БД, а не в кэш второго уровня.
+- 

@@ -3,6 +3,7 @@ package com.dmdev.entity;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import org.hibernate.annotations.*;
+import org.hibernate.annotations.Cache;
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
 
@@ -51,6 +52,7 @@ import static com.dmdev.util.StringUtils.SPACE;
 @Table(name = "users", schema = "public")
 @TypeDef(name = "dmdev", typeClass = JsonBinaryType.class)
 @Audited
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE, region = "Users")
 public class User implements Comparable<User>, BaseEntity<Long> {
 
     @Id
@@ -84,6 +86,7 @@ public class User implements Comparable<User>, BaseEntity<Long> {
     @NotAudited
     @Builder.Default
     @OneToMany(mappedBy = "user")
+    @Cache(usage = CacheConcurrencyStrategy.READ_ONLY)
     private List<UserChat> userChats = new ArrayList<>();
 
     @NotAudited
