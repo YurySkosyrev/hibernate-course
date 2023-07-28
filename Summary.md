@@ -2978,5 +2978,75 @@ implementation 'org.hibernate:hibernate-envers:5.5.7.Final'
 
 Подобное разбиение на аудирующие таблицы удобно для аналитики, но ещё удобнее всё складывать в одну таблицу для загрузки в нереляционную БД.
 
+EnversListener - базовый интерфейс для всех Listeners. Основные реализации Insert/Delete/UpdateEventListener.
+
+Создаются две основные сущности:
+
+AuditProcess - соответствует revision info. Коллекция workUnitов.
+
+AuditWorkUnit - какое именно изменение произошло. Здесь хранятся все изменения, которые произошли, тип изменений, сессия (с помощью которой и сохраняем потом в таблицу аудита)
+
+Есть свой EnversService, который занимается аудитом. Из него можно получить AuditProcessManager в котором содержит hashmap где ключ это транзакция, а значение это AuditProcess. 
+
+При закрытии транзакции мы удаляем AuditProcess из AuditProcessManeger. Так же мы перехватываем Callback в момент перед закрытием транзакции. 
+
+В нём создаются все таблицы для аудита и в них помещаются данные. Проходим по всем WorkUnit и создаём Sql-запросы с помощь метода perform.
+
+Таблицу ревизии можно переопределить
+
+```Java
+// id revision должен быть числовым
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Entity
+@RevisionEntity(DmdevRevisionListener.class) // добавляем свой Listener, чтобы записать дополнительную информацию. Envers сам устанавливает только в обязательные поля (id, timestamp)
+public class Revision {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @RevisionNumber // обязательная аннотация
+    private Long id;
+
+    @RevisionTimestamp // обязательная аннотация
+    private Long timestamp;
+
+    private String username;
+}
+
+
+public class DmdevRevisionListener implements RevisionListener {
+    @Override
+    public void newRevision(Object revisionEntity) {
+        // revisionEntity - наш класс Revision
+        // SecurityContext.getUser().getName()
+        ((Revision) revisionEntity).setUsername("dmdev");
+    }
+}
+
+
+```
+
+Из таблиц аудита можно получать объекты:
+
+```Java
+ try ( Session session2 = sessionFactory.openSession()) {
+                session2.beginTransaction();
+
+                AuditReader auditReader = AuditReaderFactory.get(session2);
+//                auditReader.find(Payment.class, 1L, 1L); // получение по id ревизии
+                Payment oldPayment = auditReader.find(Payment.class, 1L, new Date(1690466465073L));// получение по timestamp
+                session2.getTransaction().commit();
+            }
+```
+
+В auditReader можно делать запросы Criteria API
+
+```Java
+
+
+
+```
 
 
