@@ -3045,7 +3045,65 @@ public class DmdevRevisionListener implements RevisionListener {
 
 ```Java
 
+ List resultList = auditReader.createQuery()
+                        .forEntitiesAtRevision(Payment.class, 400L)
+                        .add(AuditEntity.property("amount").ge(450))
+                        .add(AuditEntity.property("id").ge(6L))
+                        .addProjection(AuditEntity.property("amount"))
+                        .addProjection(AuditEntity.id())
+                        .getResultList();
 
+```
+
+Можно не только получать данные из таблиц аудирования, но и накатывать их на БД.
+
+```Java
+session2.replicate(oldPayment, ReplicationMode.OVERWRITE);
+```
+
+
+## Second level cache
+
+Кэш первого уровня хранится в каждой сессии и недоступен из других сессии.
+
+![alt text](img/firstLevelCache.jpg "jdbc-structure")
+
+Второй уровен кэша - кэш на уровне SessionFactory
+
+![alt text](img/secondLevelCache.jpg "jdbc-structure")
+
+По умолчанию SecondLevelCache выключен. Кэш первого уровня включен всегда.
+
+Кэш второго уровня разбит на Regions в которых хранятся наши сущности в виде map - сущность и её сериализованное значение.
+
+Разбиение на Regions нужно для того чтобы настраивать каждый регион в отдельности. Задавать объем памяти, время хранения сущностей. 
+Сущности в кэше нужно периодически обновлять. 
+
+Основные понятия кэша второго уровня
+
+- Miss - обратились к кэшу, но не нашли там искомую сущность.
+
+- Put - положить в кэш. 
+
+- Hit - находим сущность в кэше.
+
+SecondLevelCach хорошо подходит для запроса в справочники и каталоги, которые практически никогда не меняются.
+
+Hibernate предоставляет интерфейс RegionFactoryTemplate для создания регионов. Его нужно либо реализовывать самому, либо подключать существующий.
+
+Так же нужен интерфейс DomainDataStoreAccess для добавления, получения, удаления данных из кэша.
+
+Подключаем зависимость для работы с ehcache:
+```Java
+   implementation 'org.hibernate:hibernate-jcache:5.5.7.Final'
+   implementation 'org.ehcache:ehcache:3.9.7'
+```
+
+Появляется реализация JCacheRegionFactory интерфейса RegionFactoryTemplate.
+
+Так же в файле конфигурации необходимо разрешить использование кэша второго уровня и установить класс для работы с провайдером кэша.
+
+```Java
 
 ```
 
