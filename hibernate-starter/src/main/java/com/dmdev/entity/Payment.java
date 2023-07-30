@@ -2,9 +2,9 @@ package com.dmdev.entity;
 
 import com.dmdev.listener.AuditDatesListener;
 import lombok.*;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.envers.Audited;
-import org.hibernate.envers.NotAudited;
-import org.hibernate.envers.RelationTargetAuditMode;
+import org.hibernate.annotations.Cache;
 
 import javax.persistence.*;
 
@@ -19,6 +19,7 @@ import javax.persistence.*;
 //@DynamicUpdate
 //@Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
 @Audited
+@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 public class Payment extends AuditableEntity<Long> {
 
     @Id

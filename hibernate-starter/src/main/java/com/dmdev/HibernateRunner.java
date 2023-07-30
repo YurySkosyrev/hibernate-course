@@ -12,6 +12,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.envers.AuditReader;
 import org.hibernate.envers.AuditReaderFactory;
 import org.hibernate.envers.query.AuditEntity;
+import org.hibernate.jpa.QueryHints;
 
 import javax.transaction.Transactional;
 import java.sql.SQLException;
@@ -31,9 +32,19 @@ public class HibernateRunner {
                 session.beginTransaction();
 
              user = session.find(User.class, 1L);
+
+             user.getCompany().getName();
+             user.getUserChats().size();
              User user1 = session.find(User.class, 1L);
-             user1.getCompany().getName();
-             user1.getUserChats().size();
+
+             session.createQuery("select p from Payment p where p.receiver.id = :userId" , Payment.class)
+                     .setParameter("userId", 1L)
+//                     .setCacheable(true)
+                     .setCacheRegion("queries")
+                     .setHint(QueryHints.HINT_CACHEABLE, true)
+                     .getResultList();
+
+                System.out.println(sessionFactory.getStatistics());
 
                 session.getTransaction().commit();
             }
@@ -44,6 +55,13 @@ public class HibernateRunner {
                 User user2 = session.find(User.class, 1L);
                 user2.getCompany().getName();
                 user2.getUserChats().size();
+
+                session.createQuery("select p from Payment p where p.receiver.id = :userId" , Payment.class)
+                        .setParameter("userId", 1L)
+//                     .setCacheable(true)
+                        .setCacheRegion("queries")
+                        .setHint(QueryHints.HINT_CACHEABLE, true)
+                        .getResultList();
 
                 session.getTransaction().commit();
             }
