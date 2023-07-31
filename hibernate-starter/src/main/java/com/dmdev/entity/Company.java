@@ -17,7 +17,7 @@ import java.util.Map;
 @Entity
 @Audited
 @Cache(usage = CacheConcurrencyStrategy.READ_ONLY, region = "Company")
-public class Company {
+public class Company implements BaseEntity<Integer> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -3249,12 +3249,52 @@ session.createQuery("select p from Payment p where p.receiver.id = :userId" , Pa
                 .getResultList();
 ```
 
+![alt text](img/QueryCach.jpg "jdbc-structure")
+
 Можно собрать статистику по использованию кэша, но такой режим тратит много ресурсов.
 
 ```Java
 <property name="hibernate.generate_statistics">true</property>
 ```
 
+## DAO and Repository
 
+Hibernate используется на двух слоях - DAO и Service
 
+![alt text](img/MVC-model.jpg "jdbc-structure")
+
+Первичные ключи в Hiebrnate должны быть serializable.
+
+Для параметризации класса есть три способа
+
+- указать класс как поле
+- создать метод getEntityClass
+- Reflection API
+
+Для параметризации внутри запроса лучше всего подойдёт CriteriaAPI
+
+Слой Repository стоит между Service и Dao, он работает с Dao, но не работает с маппингом сущностей из реляционной модели и назад.
+
+```Java
+public abstract class RepositoryBase<K extends Serializable, E extends BaseEntity> implements Repository<K, E> {
+
+    private final SessionFactory sessionFactory;
+    private final Class<E> clazz;
+
+    @Override
+    public E save(E entity) {
+
+        @Cleanup
+        Session session = sessionFactory.openSession();
+
+        session.save(entity);
+        return entity;
+    }
+
+...
+
+}
+```
+
+В этом случае сессия будет закрываться после работы метода и мы будем получать ошибку LazyInitialization Exception. Нам нужно, чтобы сессия была одна для потока и оставалась жива.
 
