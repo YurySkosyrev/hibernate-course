@@ -3298,3 +3298,79 @@ public abstract class RepositoryBase<K extends Serializable, E extends BaseEntit
 
 В этом случае сессия будет закрываться после работы метода и мы будем получать ошибку LazyInitialization Exception. Нам нужно, чтобы сессия была одна для потока и оставалась жива.
 
+Решение предоставляет Hibernate - получение текущей сессии. В Hibernate есть специальный интерфейс, который отвечает за стратегию получения сессии - CurrentSessionContext. 
+- ThreadLocalSessionContext - удобная реализация. ThreadLocal переменная хранит сессия для каждого потока. Данная реализация автоматически создаёт сессию при beginTransaction и удаляет её из ThreadLocal переменной после commit.
+- ManageSessionContext отличается тем что не открывает и не закрывает автоматически транзакцию.
+- JtaSessionContext - для распределенных транзакций.
+
+В конфиге Hibernate нужно указать какую реализацию мы будем использовать.
+
+```Java
+<property name="hibernate.current_session_context_class">thread</property>
+```
+
+В методах репозитория мы не закрываем сессию @Cleanup и не открываем её, а получаем сессию
+
+```Java
+@Override
+public E save(E entity) {
+
+    Session session = sessionFactory.getCurrentSession();
+
+    session.save(entity);
+    return entity;
+}
+```
+
+В Runner достаточно получить текущую сессию и сделать у неё begin и commit.
+
+```Java
+@Transactional
+    public static void main(String[] args) throws SQLException {
+        try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory()) {
+
+            Session session = sessionFactory.getCurrentSession();
+            session.beginTransaction();
+
+            PaymentRepository paymentRepository = new PaymentRepository(sessionFactory);
+
+            paymentRepository.findById(1L).ifPresent(System.out::println);
+
+            session.getTransaction().commit();
+        }
+    }
+```
+
+Т.о. ThreadLocalSessionContext сделает всё за нас. 
+
+ThreadLocalSessionContext не будет работать с многопоточностью, например, Spring Reactive, где одну и ту же функциональность выполняют несколько потоков.
+
+На уровне Service нужно работать с транзакциями.
+
+Так же в методы репозитория нужно передавать не SessionFactory, а Session, либо EntityManager. Тогда в репозиторий будет передаваться только соединение.
+
+Передавать session так нельзя, если произойдет вызов репозитория из другого потока, то всё не будет работать
+```Java
+ PaymentRepository paymentRepository = new PaymentRepository(session);
+```
+
+Поэтому нужно создать Proxy - session
+
+```Java
+    @Transactional
+    public static void main(String[] args) throws SQLException {
+        try (SessionFactory sessionFactory = HibernateUtil.buildSessionFactory()) {
+
+            Session session = (Session) Proxy.newProxyInstance(SessionFactory.class.getClassLoader(), new Class[]{Session.class},
+                    (proxy, method, args1) -> method.invoke(sessionFactory.getCurrentSession(), args1));
+
+            session.beginTransaction();
+
+            PaymentRepository paymentRepository = new PaymentRepository(session);
+            paymentRepository.findById(1L).ifPresent(System.out::println);
+
+            session.getTransaction().commit();
+        }
+    }
+```
+
