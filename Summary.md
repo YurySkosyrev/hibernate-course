@@ -3378,3 +3378,125 @@ ThreadLocalSessionContext не будет работать с многопото
 
 Для преобразования сущностей в Dto используют mapper. Есть фреймворки для автоматического создания mapper, например MapStruct.
 
+Необходимо обеспечить функционал автоматического открытия и закрытия сессии. Для этого нужен proxy, dynamic не подойдет т.к. мы имеем просто класс UserService. Поэтому нам подойдёт proxy через наследование.
+
+Для создания proxy можно воспользоваться библиотекой ByteBuddy, которая используется в Hibernate.
+
+@RuntimeType - не знаем какой тип придёт из метода
+
+@SuperCall - будем вызывать реальный метод, не прокси
+
+@Origin - метод, который вызывается у UserService, у которого будем проверять наличие аннотации.
+
+В рамках одного потока может быть открыта только одна транзакция, поэтому всегда нужно проверят активна ли хотя бы одна транзакция.
+
+Всегда нужно отслеживать где была открыта транзакция. И закрывать именно в этом методе, потому, что в одном методе может быть вызван другой, в том ещё один и нужно закрывать транзакцию именно в начальном узле последовательности.
+
+```Java
+  UserService userService = new ByteBuddy()
+                    .subclass(UserService.class) // создание субкласса
+                    .method(ElementMatchers.any()) // все методы должны быть проверены на наличие аннотации
+                    .intercept(MethodDelegation.to(transactionInterceptor)) // все методы должны использвоать интерсептор, можно создать один бин
+                    .make() // возвращает объект, который можно загрузить в память
+                    .load(UserService.class.getClassLoader()) // передаём class-loader, который загружает класс в JVM
+                    .getLoaded() // получаем загруженный класс
+                    .getDeclaredConstructor(UserRepository.class, UserReadMapper.class, UserCreateMapper.class) // получаем у него конструктор, который принимает все аргументы
+                    .newInstance(userRepository, userReadMapper, userCreateMapper); // создаем объект этого класса.
+```
+
+## Валидация JSR 303
+
+Используем готовые аннотации и интерфейсы для валидации объекта.
+
+Необходимо подключить зависимости
+
+```Java
+ implementation 'org.hibernate:hibernate-validator:6.0.22.Final'
+    implementation 'javax.el:javax.el-api:3.0.0'
+    implementation 'org.glassfish:javax.el:3.0.0'
+```
+
+Далее над полями сущности можно поставить аннотации - констрэйнты.
+
+```Java
+public class User implements Comparable<User>, BaseEntity<Long> {
+
+    @Valid
+    @AttributeOverride(name = "birthDate", column = @Column(name = "birth_date"))
+    private PersonalInfo personalInfo;
+
+}
+
+public class PersonalInfo implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 9154080960028288028L;
+
+    private String firstname;
+    private String lastname;
+    @NotNull
+    private LocalDate birthDate;
+}
+
+
+```
+
+Валидировать данные лучше на уровне сервиса. Для этого можно создать свой валидатор, который будет бином. И он пробросит исключения в случае обнаружения нарушения констрэинтов.
+
+```Java
+public class UserService {
+    
+    private final UserRepository userRepository;
+    private final UserReadMapper userReadMapper;
+    private final UserCreateMapper userCreateMapper;
+
+    @Transactional
+    public Long create(UserCreateDto userDto) {
+        // validation лучше валидировать Dto
+
+        ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
+        Validator validator = validatorFactory.getValidator();
+
+        Set<ConstraintViolation<UserCreateDto>> validationResult = validator.validate(userDto);
+
+        if(!validationResult.isEmpty()) {
+            throw new ConstraintViolationException(validationResult);
+        }
+        // map
+        User userEntity = userCreateMapper.mapFrom(userDto);
+        return userRepository.save(userEntity).getId();
+    }
+}
+```
+
+Также констрэинты можна разбивать на группы, чтобы валидировать только по принадлежности определенной группе
+
+```Java
+   @NotNull(groups = UpdateCheck.class)
+                            Role role,
+
+// создаём интерфейс-метку UpdateCheck.class
+
+public interface UpdateCheck {
+}
+
+// передаем группы для валидации в валидатор
+
+Set<ConstraintViolation<UserCreateDto>> validationResult = validator.validate(userDto, UpdateCheck.class);
+```
+
+Т.о. по умолчанию проверяются все валидации без группы, а с группой, только если она передана в валидатор.
+
+## Заключение
+
+Дополнительно можно изучить распределенные транзакции, которые в Hbernate реализованы в виде двухфазного коммита.
+
+Мапперы удобно создавать автоматически с помощью библиотеки MapStruct.
+
+Использование фреймворка DI - Spring. Spring Data использует Hibernate (даже не нужно писать свое DAO). 
+
+Тем более все созданные нами объекты ThreadSafe т.е. достаточно одного объекта на всё приложение.
+
+Сам Spring Framework предоставляет работу с transaction management, т.е. не нужно писать свои transaction интерсепторы, с которым трудно работать.
+
+Spring Boot - фреймворк над фреймворками предназначен для облегчения работы с другими фреймворками Spring.
+

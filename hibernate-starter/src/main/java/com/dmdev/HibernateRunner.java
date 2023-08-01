@@ -66,11 +66,11 @@ public class HibernateRunner {
                     PersonalInfo.builder()
                             .firstname("Liza")
                             .lastname("Stepanova")
-                            .birthDate(LocalDate.now())
+                           // .birthDate(LocalDate.now())
                             .build(),
-                    "liza2@gmail.com",
+                    "liza4@gmail.com",
                     null,
-                    Role.USER,
+                    null,
                     1
             );
             userService.create(userCreateDto);
