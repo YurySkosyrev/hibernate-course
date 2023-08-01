@@ -3374,3 +3374,7 @@ ThreadLocalSessionContext не будет работать с многопото
     }
 ```
 
+Для передачи данных из слоя Service обычно используются DTO. Они позволяют не получать LazyInitializationException. DTO обычно immutable.
+
+Для преобразования сущностей в Dto используют mapper. Есть фреймворки для автоматического создания mapper, например MapStruct.
+

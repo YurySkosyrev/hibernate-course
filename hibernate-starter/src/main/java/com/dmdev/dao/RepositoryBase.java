@@ -1,6 +1,7 @@
 package com.dmdev.dao;
 
 import com.dmdev.entity.BaseEntity;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.Session;
 
@@ -8,11 +9,13 @@ import javax.persistence.EntityManager;
 import javax.persistence.criteria.CriteriaQuery;
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RequiredArgsConstructor
 public abstract class RepositoryBase<K extends Serializable, E extends BaseEntity> implements Repository<K, E> {
 
+    @Getter
     private final EntityManager entityManager;
     private final Class<E> clazz;
 
@@ -38,9 +41,9 @@ public abstract class RepositoryBase<K extends Serializable, E extends BaseEntit
     }
 
     @Override
-    public Optional<E> findById(K id) {
+    public Optional<E> findById(K id, Map<String, Object> properties) {
 
-        return Optional.ofNullable(entityManager.find(clazz, id));
+        return Optional.ofNullable(entityManager.find(clazz, id, properties));
     }
 
     @Override
